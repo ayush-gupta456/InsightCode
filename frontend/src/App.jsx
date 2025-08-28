@@ -15,16 +15,16 @@ function App() {
   const debugRef = useRef(null);
   const reviewRef = useRef(null);
   const complexityRef = useRef(null);
-  const [ code, setCode ] = useState(` function sum() {
+  const [code, setCode] = useState(` function sum() {
   return 1 + 1
-}`)
+}`);
 
   const [result, setResult] = useState("");
   const [resultType, setResultType] = useState(""); // "review", "complexity", "debug"
-  const [loading, setLoading] = useState(false);
-  const [loadingComplexity, setLoadingComplexity] = useState(false);
-  const [loadingDebug, setLoadingDebug] = useState(false);
+  const [loading, setLoading] = useState(false); // unified loader
+  const [loadingType, setLoadingType] = useState(""); // "review", "complexity", "debug"
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(""); // show copied message
 
   useEffect(() => {
     prism.highlightAll();
@@ -32,6 +32,7 @@ function App() {
 
   async function reviewCode() {
     setLoading(true);
+    setLoadingType("review");
     setError(null);
     setResult("");
     setResultType("");
@@ -43,11 +44,13 @@ function App() {
       setError("Failed to get review. Please try again.");
     } finally {
       setLoading(false);
+      setLoadingType("");
     }
   }
 
   async function analyzeComplexity() {
-    setLoadingComplexity(true);
+    setLoading(true);
+    setLoadingType("complexity");
     setError(null);
     setResult("");
     setResultType("");
@@ -58,12 +61,14 @@ function App() {
     } catch (_err) {
       setError("Failed to analyze complexity. Please try again.");
     } finally {
-      setLoadingComplexity(false);
+      setLoading(false);
+      setLoadingType("");
     }
   }
 
   async function debugCode() {
-    setLoadingDebug(true);
+    setLoading(true);
+    setLoadingType("debug");
     setError(null);
     setResult("");
     setResultType("");
@@ -75,7 +80,8 @@ function App() {
       setResult(`Error: ${err.message}`);
       setResultType("debug");
     } finally {
-      setLoadingDebug(false);
+      setLoading(false);
+      setLoadingType("");
     }
   }
 
@@ -90,23 +96,23 @@ function App() {
               <button
                 onClick={reviewCode}
                 className="review"
-                disabled={loading || loadingComplexity || loadingDebug}
+                disabled={loading}
               >
-                {loading ? 'Reviewing...' : 'Review Code'}
+                {loading && loadingType === "review" ? 'Reviewing...' : 'Review Code'}
               </button>
               <button
                 onClick={analyzeComplexity}
                 className="complexity"
-                disabled={loading || loadingComplexity || loadingDebug}
+                disabled={loading}
               >
-                {loadingComplexity ? 'Analyzing...' : 'Time and Space Complexity'}
+                {loading && loadingType === "complexity" ? 'Analyzing...' : 'Time and Space Complexity'}
               </button>
               <button
                 onClick={debugCode}
                 className="debug"
-                disabled={loading || loadingComplexity || loadingDebug}
+                disabled={loading}
               >
-                {loadingDebug ? 'Debugging...' : 'Debug Code'}
+                {loading && loadingType === "debug" ? 'Debugging...' : 'Debug Code'}
               </button>
             </div>
           </div>
@@ -147,7 +153,7 @@ function App() {
         <div className="right">
           <h2 style={{ color: '#00e6a8', marginBottom: '1.5rem', fontWeight: 700, fontSize: '1.5rem' }}>Result Window</h2>
           {error && <div className="error">{error}</div>}
-          {(loading || loadingComplexity) && (
+          {loading && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
               <span style={{
                 fontSize: '1.3rem',
@@ -157,7 +163,9 @@ function App() {
                 letterSpacing: '1px',
                 animation: 'pulse 1.2s infinite'
               }}>
-                {loading ? 'Analyzing code review...' : 'Analyzing complexity...'}
+                {loadingType === "review" && 'Analyzing code review...'}
+                {loadingType === "complexity" && 'Analyzing complexity...'}
+                {loadingType === "debug" && 'Debugging...'}
               </span>
               <span style={{
                 width: '40px',
@@ -181,7 +189,7 @@ function App() {
               `}</style>
             </div>
           )}
-          {!loading && !loadingComplexity && !loadingDebug && resultType === "debug" && result && (
+          {!loading && resultType === "debug" && result && (
             <div style={{ position: 'relative' }}>
               <h3 style={{ color: '#ffb300', marginBottom: '1rem', fontWeight: 600 }}>Debug Output</h3>
               <button
@@ -190,16 +198,18 @@ function App() {
                   if (debugRef.current) {
                     const text = debugRef.current.innerText;
                     navigator.clipboard.writeText(text);
+                    setCopied("debug");
+                    setTimeout(() => setCopied(""), 1200);
                   }
                 }}
                 title="Copy result"
-              >Copy</button>
+              >{copied === "debug" ? "Copied!" : "Copy"}</button>
               <div ref={debugRef} className={`result-content debug-output`}>
                 <Markdown rehypePlugins={[rehypeHighlight]}>{result}</Markdown>
               </div>
             </div>
           )}
-          {!loading && !loadingComplexity && !loadingDebug && resultType === "review" && result && (
+          {!loading && resultType === "review" && result && (
             <div style={{ position: 'relative' }}>
               <h3 style={{ color: '#00b3ff', marginBottom: '1rem', fontWeight: 600 }}>Code Review</h3>
               <button
@@ -208,16 +218,18 @@ function App() {
                   if (reviewRef.current) {
                     const text = reviewRef.current.innerText;
                     navigator.clipboard.writeText(text);
+                    setCopied("review");
+                    setTimeout(() => setCopied(""), 1200);
                   }
                 }}
                 title="Copy result"
-              >Copy</button>
+              >{copied === "review" ? "Copied!" : "Copy"}</button>
               <div ref={reviewRef} className="result-content review-output">
                 <Markdown rehypePlugins={[rehypeHighlight]}>{result}</Markdown>
               </div>
             </div>
           )}
-          {!loading && !loadingComplexity && !loadingDebug && resultType === "complexity" && result && (
+          {!loading && resultType === "complexity" && result && (
             <div style={{ position: 'relative' }}>
               <h3 style={{ color: '#00b3ff', marginBottom: '1rem', fontWeight: 600 }}>Time and Space Complexity Analysis</h3>
               <button
@@ -226,10 +238,12 @@ function App() {
                   if (complexityRef.current) {
                     const text = complexityRef.current.innerText;
                     navigator.clipboard.writeText(text);
+                    setCopied("complexity");
+                    setTimeout(() => setCopied(""), 1200);
                   }
                 }}
                 title="Copy result"
-              >Copy</button>
+              >{copied === "complexity" ? "Copied!" : "Copy"}</button>
               <div ref={complexityRef} className="result-content complexity-output">
                 <Markdown rehypePlugins={[rehypeHighlight]}>{result}</Markdown>
               </div>
@@ -241,7 +255,4 @@ function App() {
     </>
   );
 }
-
-
-
 export default App
