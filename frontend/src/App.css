@@ -28,6 +28,8 @@ main {
   display: flex;
   gap: 1.5rem;
   padding: 1.5rem;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .left,
@@ -240,6 +242,7 @@ main {
   max-height: 60vh;
   overflow-y: auto;
   margin-bottom: 1rem;
+  min-height: 120px;
 }
 
 .result-content strong {
@@ -305,6 +308,9 @@ main {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   width: 100%;
   border-bottom: 2px solid #00e6a8;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .app-title {
@@ -334,6 +340,9 @@ main {
   text-align: center;
   border-top: 1px solid #2c2f36;
   margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
 }
 
 .footer-text {
