@@ -35,11 +35,15 @@ coverage/
 # Frontend
 frontend/node_modules/
 frontend/dist/
+frontend/.env
+frontend/.env.*
 
 # Backend
 backend/node_modules/
 backend/dist/
 backend/build/
+backend/.env
+backend/.env.*
 
 # Others
 *.bak
