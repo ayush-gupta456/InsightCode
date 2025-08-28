@@ -154,6 +154,13 @@ main {
 }
 
 /* Result Window Styles */
+.result-window-title {
+  color: #00e6a8;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
 .result-block {
   position: relative;
   margin-bottom: 1rem;
@@ -184,6 +191,16 @@ main {
 .copy-btn:hover {
   background: #404853;
   color: #00e6a8;
+}
+
+.copied-message {
+  color: #00e6a8;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
 }
 
 /* Loader Styles */
@@ -369,31 +386,6 @@ main {
   }
   .right { padding: 1rem; }
 }
-  /* Responsive button styles */
-  button, .btn {
-    padding: 12px 28px;
-    font-size: 1rem;
-    border-radius: 8px;
-    border: none;
-    background: linear-gradient(90deg, #00ffd0 0%, #00bfff 100%);
-    color: #181c24;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.2s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  button:hover, .btn:hover {
-    background: linear-gradient(90deg, #00bfff 0%, #00ffd0 100%);
-    transform: translateY(-2px) scale(1.04);
-  }
-
-  @media (max-width: 600px) {
-    button, .btn {
-      padding: 10px 16px;
-      font-size: 0.95rem;
-      border-radius: 6px;
-    }
-  }
 
 @media (max-width: 768px) {
   .app-header {

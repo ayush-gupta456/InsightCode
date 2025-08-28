@@ -2,7 +2,7 @@
 import axios from 'axios';
 import prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Markdown from "react-markdown";
 import Editor from "react-simple-code-editor";
 import rehypeHighlight from "rehype-highlight";
@@ -11,10 +11,7 @@ import Footer from './Footer';
 import Header from './Header';
 
 function App() {
-  const debugRef = useRef(null);
-  const reviewRef = useRef(null);
-  const complexityRef = useRef(null);
-  const [code, setCode] = useState(` function sum() {
+  const [code, setCode] = useState(`function sum() {
   return 1 + 1
 }`);
 
@@ -39,7 +36,7 @@ function App() {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/ai/get-review`, { code });
       setResult(response.data);
       setResultType("review");
-    } catch (_err) {
+    } catch {
       setError("Failed to get review. Please try again.");
     } finally {
       setLoading(false);
@@ -57,7 +54,7 @@ function App() {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/ai/get-complexity`, { code });
       setResult(response.data);
       setResultType("complexity");
-    } catch (_err) {
+    } catch {
       setError("Failed to analyze complexity. Please try again.");
     } finally {
       setLoading(false);
@@ -142,7 +139,7 @@ function App() {
           </div>
         </div>
         <div className="right">
-          <h2 style={{ color: '#00e6a8', marginBottom: '1.5rem', fontWeight: 700, fontSize: '1.5rem' }}>Result Window</h2>
+          <h2 className='result-window-title'>Result Window</h2>
           {error && <div className="error" role="alert">{error}</div>}
           {loading && (
             <div className="loader-container">
@@ -160,17 +157,16 @@ function App() {
               <button
                 className="copy-btn debug-copy"
                 onClick={() => {
-                  if (debugRef.current) {
-                    const text = debugRef.current.innerText;
-                    navigator.clipboard.writeText(text);
-                    setCopied("debug");
-                    setTimeout(() => setCopied(""), 1200);
-                  }
+                  navigator.clipboard.writeText(result);
+                  setCopied("debug");
+                  setTimeout(() => setCopied(""), 2000);
                 }}
                 title="Copy result"
                 aria-label="Copy debug result"
-              >{copied === "debug" ? "Copied!" : "Copy"}</button>
-              <div ref={debugRef} className={`result-content debug-output`}>
+              >
+                {copied === "debug" ? <span className="copied-message">Copied!</span> : "Copy"}
+              </button>
+              <div className={`result-content debug-output`}>
                 <Markdown rehypePlugins={[rehypeHighlight]}>{result}</Markdown>
               </div>
             </div>
@@ -181,17 +177,16 @@ function App() {
               <button
                 className="copy-btn review-copy"
                 onClick={() => {
-                  if (reviewRef.current) {
-                    const text = reviewRef.current.innerText;
-                    navigator.clipboard.writeText(text);
-                    setCopied("review");
-                    setTimeout(() => setCopied(""), 1200);
-                  }
+                  navigator.clipboard.writeText(result);
+                  setCopied("review");
+                  setTimeout(() => setCopied(""), 2000);
                 }}
                 title="Copy result"
                 aria-label="Copy review result"
-              >{copied === "review" ? "Copied!" : "Copy"}</button>
-              <div ref={reviewRef} className="result-content review-output">
+              >
+                {copied === "review" ? <span className="copied-message">Copied!</span> : "Copy"}
+              </button>
+              <div className="result-content review-output">
                 <Markdown rehypePlugins={[rehypeHighlight]}>{result}</Markdown>
               </div>
             </div>
@@ -202,17 +197,16 @@ function App() {
               <button
                 className="copy-btn complexity-copy"
                 onClick={() => {
-                  if (complexityRef.current) {
-                    const text = complexityRef.current.innerText;
-                    navigator.clipboard.writeText(text);
-                    setCopied("complexity");
-                    setTimeout(() => setCopied(""), 1200);
-                  }
+                  navigator.clipboard.writeText(result);
+                  setCopied("complexity");
+                  setTimeout(() => setCopied(""), 2000);
                 }}
                 title="Copy result"
                 aria-label="Copy complexity result"
-              >{copied === "complexity" ? "Copied!" : "Copy"}</button>
-              <div ref={complexityRef} className="result-content complexity-output">
+              >
+                {copied === "complexity" ? <span className="copied-message">Copied!</span> : "Copy"}
+              </button>
+              <div className="result-content complexity-output">
                 <Markdown rehypePlugins={[rehypeHighlight]}>{result}</Markdown>
               </div>
             </div>
