@@ -1,18 +1,39 @@
 const express = require('express');
-const aiRoutes = require('./routes/ai.routes')
-const cors = require('cors')
+const aiRoutes = require('./routes/ai.routes');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
-const app = express()
+const app = express();
 
-app.use(cors())
+// Security middlewares
+app.use(helmet());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
+// Limit JSON payload size
+app.use(express.json({ limit: '10kb' }));
 
-app.use(express.json())
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 30, // limit each IP to 30 requests per minute
+});
+app.use(limiter);
 
 app.get('/', (req, res) => {
-    res.send('Server is running')
-})
+    res.send('Server is running');
+});
 
-app.use('/ai', aiRoutes)
+app.use('/ai', aiRoutes);
 
-module.exports = app
+// Error handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+});
+
+module.exports = app;
