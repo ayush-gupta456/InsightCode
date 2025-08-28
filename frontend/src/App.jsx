@@ -1,6 +1,5 @@
 
 import axios from 'axios';
-import "highlight.js/styles/github-dark.css";
 import prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css";
 import { useEffect, useRef, useState } from 'react';
@@ -90,47 +89,38 @@ function App() {
       <Header />
       <main>
         <div className="left">
-          <h2>Write or paste your code here</h2>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.2rem', gap: '1rem', width: '100%', justifyContent: 'flex-end' }}>
-            <div className="buttons" style={{ margin: 0 }}>
-              <button
-                onClick={reviewCode}
-                className="review"
-                disabled={loading}
-              >
-                {loading && loadingType === "review" ? 'Reviewing...' : 'Review Code'}
-              </button>
-              <button
-                onClick={analyzeComplexity}
-                className="complexity"
-                disabled={loading}
-              >
-                {loading && loadingType === "complexity" ? 'Analyzing...' : 'Time and Space Complexity'}
-              </button>
-              <button
-                onClick={debugCode}
-                className="debug"
-                disabled={loading}
-              >
-                {loading && loadingType === "debug" ? 'Debugging...' : 'Debug Code'}
-              </button>
-            </div>
+          <h2 tabIndex={0} aria-label="Code input area">Write or paste your code here</h2>
+          <div className="buttons">
+            <button
+              onClick={reviewCode}
+              className="review"
+              disabled={loading}
+              aria-busy={loading && loadingType === 'review'}
+            >
+              {loading && loadingType === "review" ? 'Reviewing...' : 'Review Code'}
+            </button>
+            <button
+              onClick={analyzeComplexity}
+              className="complexity"
+              disabled={loading}
+              aria-busy={loading && loadingType === 'complexity'}
+            >
+              {loading && loadingType === "complexity" ? 'Analyzing...' : 'Time and Space Complexity'}
+            </button>
+            <button
+              onClick={debugCode}
+              className="debug"
+              disabled={loading}
+              aria-busy={loading && loadingType === 'debug'}
+            >
+              {loading && loadingType === "debug" ? 'Debugging...' : 'Debug Code'}
+            </button>
           </div>
           <div className="code">
-            <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-              <div style={{
-                background: '#282c34',
-                color: '#888',
-                textAlign: 'right',
-                padding: '10px 5px',
-                fontFamily: '"Fira code", "Fira Mono", monospace',
-                fontSize: 16,
-                userSelect: 'none',
-                minWidth: '32px',
-                borderRight: '1px solid #ddd'
-              }}>
+            <div className="code-editor-container">
+              <div className="code-lines">
                 {code.split('\n').map((_, i) => (
-                  <div key={i} style={{ height: '1.5em' }}>{i + 1}</div>
+                  <div key={i}>{i + 1}</div>
                 ))}
               </div>
               <Editor
@@ -146,54 +136,29 @@ function App() {
                   height: "100%",
                   width: "100%"
                 }}
+                aria-label="Code editor"
               />
             </div>
           </div>
         </div>
         <div className="right">
           <h2 style={{ color: '#00e6a8', marginBottom: '1.5rem', fontWeight: 700, fontSize: '1.5rem' }}>Result Window</h2>
-          {error && <div className="error">{error}</div>}
+          {error && <div className="error" role="alert">{error}</div>}
           {loading && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <span style={{
-                fontSize: '1.3rem',
-                color: '#00e6a8',
-                fontWeight: 600,
-                marginBottom: '1rem',
-                letterSpacing: '1px',
-                animation: 'pulse 1.2s infinite'
-              }}>
+            <div className="loader-container">
+              <span className="loader-message">
                 {loadingType === "review" && 'Analyzing code review...'}
                 {loadingType === "complexity" && 'Analyzing complexity...'}
                 {loadingType === "debug" && 'Debugging...'}
               </span>
-              <span style={{
-                width: '40px',
-                height: '40px',
-                border: '4px solid #00e6a8',
-                borderTop: '4px solid #23272f',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                display: 'inline-block'
-              }}></span>
-              <style>{`
-                @keyframes spin {
-                  0% { transform: rotate(0deg); }
-                  100% { transform: rotate(360deg); }
-                }
-                @keyframes pulse {
-                  0% { opacity: 1; }
-                  50% { opacity: 0.5; }
-                  100% { opacity: 1; }
-                }
-              `}</style>
+              <span className="loader-spinner"></span>
             </div>
           )}
           {!loading && resultType === "debug" && result && (
-            <div style={{ position: 'relative' }}>
-              <h3 style={{ color: '#ffb300', marginBottom: '1rem', fontWeight: 600 }}>Debug Output</h3>
+            <div className="result-block debug-block">
+              <h3>Debug Output</h3>
               <button
-                style={{ position: 'absolute', top: 0, right: 0, background: '#ffe066', color: '#181a20', border: 'none', borderRadius: '5px', padding: '0.4rem 1rem', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}
+                className="copy-btn debug-copy"
                 onClick={() => {
                   if (debugRef.current) {
                     const text = debugRef.current.innerText;
@@ -203,6 +168,7 @@ function App() {
                   }
                 }}
                 title="Copy result"
+                aria-label="Copy debug result"
               >{copied === "debug" ? "Copied!" : "Copy"}</button>
               <div ref={debugRef} className={`result-content debug-output`}>
                 <Markdown rehypePlugins={[rehypeHighlight]}>{result}</Markdown>
@@ -210,10 +176,10 @@ function App() {
             </div>
           )}
           {!loading && resultType === "review" && result && (
-            <div style={{ position: 'relative' }}>
-              <h3 style={{ color: '#00b3ff', marginBottom: '1rem', fontWeight: 600 }}>Code Review</h3>
+            <div className="result-block review-block">
+              <h3>Code Review</h3>
               <button
-                style={{ position: 'absolute', top: 0, right: 0, background: '#00e6a8', color: '#181a20', border: 'none', borderRadius: '5px', padding: '0.4rem 1rem', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}
+                className="copy-btn review-copy"
                 onClick={() => {
                   if (reviewRef.current) {
                     const text = reviewRef.current.innerText;
@@ -223,6 +189,7 @@ function App() {
                   }
                 }}
                 title="Copy result"
+                aria-label="Copy review result"
               >{copied === "review" ? "Copied!" : "Copy"}</button>
               <div ref={reviewRef} className="result-content review-output">
                 <Markdown rehypePlugins={[rehypeHighlight]}>{result}</Markdown>
@@ -230,10 +197,10 @@ function App() {
             </div>
           )}
           {!loading && resultType === "complexity" && result && (
-            <div style={{ position: 'relative' }}>
-              <h3 style={{ color: '#00b3ff', marginBottom: '1rem', fontWeight: 600 }}>Time and Space Complexity Analysis</h3>
+            <div className="result-block complexity-block">
+              <h3>Time and Space Complexity Analysis</h3>
               <button
-                style={{ position: 'absolute', top: 0, right: 0, background: '#00e6a8', color: '#181a20', border: 'none', borderRadius: '5px', padding: '0.4rem 1rem', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}
+                className="copy-btn complexity-copy"
                 onClick={() => {
                   if (complexityRef.current) {
                     const text = complexityRef.current.innerText;
@@ -243,6 +210,7 @@ function App() {
                   }
                 }}
                 title="Copy result"
+                aria-label="Copy complexity result"
               >{copied === "complexity" ? "Copied!" : "Copy"}</button>
               <div ref={complexityRef} className="result-content complexity-output">
                 <Markdown rehypePlugins={[rehypeHighlight]}>{result}</Markdown>

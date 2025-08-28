@@ -1,7 +1,7 @@
 * {
   box-sizing: border-box;
   margin: 0;
-  padding: 0
+  padding: 0;
 }
 
 html,
@@ -105,23 +105,114 @@ main {
   opacity: 0.6;
   cursor: not-allowed;
   pointer-events: none;
-  box-shadow: none
+  box-shadow: none;
+  transition: all 0.3s ease;
 }
 
+/* Code Editor Styles */
 .left .code {
   flex: 1 1 auto;
   margin-top: 0.5rem;
   border-radius: 6px;
   overflow: hidden;
+  background: #181a20;
+  border: 1px solid #2c2f36;
+}
+
+.code-editor-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+}
+
+.code-lines {
+  background: #23272f;
+  color: #6b7280;
+  padding: 10px 8px;
+  font-family: 'Fira Code', 'Fira Mono', monospace;
+  font-size: 16px;
+  line-height: 1.5;
+  user-select: none;
+  border-right: 1px solid #2c2f36;
+  min-width: 45px;
+  text-align: right;
+}
+
+.code-lines div {
+  height: 1.5em;
+  font-weight: 500;
 }
 
 .code pre,
 .code pre code {
   height: 100%;
   width: 100%;
-  background: #0f1112;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  background: #181a20;
+  border-radius: 0 6px 6px 0;
+  box-shadow: none;
+}
+
+/* Result Window Styles */
+.result-block {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.result-block h3 {
+  color: #00e6a8;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: #2c2f36;
+  color: #b0b8c1;
+  border: 1px solid #404853;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.copy-btn:hover {
+  background: #404853;
+  color: #00e6a8;
+}
+
+/* Loader Styles */
+.loader-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  flex-direction: column;
+}
+
+.loader-message {
+  color: #00e6a8;
+  font-weight: 600;
+}
+
+.loader-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #2c2f36;
+  border-top: 3px solid #00e6a8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .result-content {
@@ -189,12 +280,81 @@ main {
   margin-bottom: 0.75rem
 }
 
-footer {
-  font-size: 0.95rem
+/* Header Styles */
+.app-header {
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  text-align: left;
+  background: #23272f;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  border-bottom: 2px solid #00e6a8;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 2.5rem;
+  letter-spacing: 2px;
+  color: #00e6a8;
+  font-family: 'Fira Sans', 'Segoe UI', sans-serif;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.app-subtitle {
+  margin: 0.75rem 0 0 0;
+  font-size: 1.1rem;
+  color: #b0b8c1;
+  font-family: 'Fira Sans', 'Segoe UI', sans-serif;
+  font-weight: 400;
+  max-width: 500px;
+  line-height: 1.4;
+}
+
+/* Footer Styles */
+.footer {
+  background: #23272f;
+  padding: 1.5rem 2rem;
+  text-align: center;
+  border-top: 1px solid #2c2f36;
+  margin-top: auto;
+}
+
+.footer-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #b0b8c1;
+  font-family: 'Fira Sans', 'Segoe UI', sans-serif;
+}
+
+.footer-heart {
+  color: #ff6b6b;
+  font-size: 1.1rem;
+  display: inline-block;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+.footer-author {
+  color: #00e6a8;
+  font-weight: 600;
+}
+
+@keyframes heartbeat {
+  0%, 50%, 100% { transform: scale(1); }
+  25%, 75% { transform: scale(1.1); }
 }
 
 /* Responsive breakpoints: tablet and mobile improvements */
 @media (max-width: 1024px) {
+  .app-header {
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+  }
+  .app-title {
+    font-size: 2.2rem;
+    letter-spacing: 1.5px;
+  }
+  .app-subtitle {
+    font-size: 1rem;
+  }
   main {
     gap: 1rem;
     padding: 1rem;
@@ -211,6 +371,19 @@ footer {
 }
 
 @media (max-width: 768px) {
+  .app-header {
+    padding: 1.5rem 1rem 1.25rem 1rem;
+  }
+  .app-title {
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+  }
+  .app-subtitle {
+    font-size: 0.95rem;
+  }
+  .footer {
+    padding: 1rem 1rem;
+  }
   main {
     flex-direction: column;
     padding: 0.8rem;
@@ -237,13 +410,35 @@ footer {
     font-size: 0.98rem;
   }
   .left .code { min-height: 200px; }
+  .code-editor-container { min-height: 200px; }
+  .code-lines { font-size: 14px; min-width: 35px; padding: 10px 6px; }
   .result-content { max-height: 45vh; }
   .result-content table { display: block; width: 100%; overflow-x: auto; }
+  .copy-btn { position: relative; top: unset; right: unset; margin-bottom: 0.5rem; display: inline-block; }
 }
 
 @media (max-width: 420px) {
   body { font-size: 14px; }
+  .app-header {
+    padding: 1rem 0.75rem 1rem 0.75rem;
+  }
+  .app-title {
+    font-size: 1.5rem;
+    letter-spacing: 0.5px;
+  }
+  .app-subtitle {
+    font-size: 0.9rem;
+  }
+  .footer {
+    padding: 0.75rem 0.5rem;
+  }
+  .footer-text {
+    font-size: 0.85rem;
+  }
   .left h2 { font-size: 0.95rem; padding: 0.3rem 0.5rem; }
   .buttons button { padding: 0.6rem 0.6rem; font-size: 0.95rem }
   .code pre, .code pre code { font-size: 13px }
+  .code-lines { font-size: 13px; min-width: 30px; padding: 10px 4px; }
+  .code-editor-container { min-height: 180px; }
+  .result-content { padding: 0.8rem 1rem; }
 }
