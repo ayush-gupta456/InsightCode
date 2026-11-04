@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 for (const route of ["/login", "/register"]) {
   test(`password visibility can be toggled without submitting ${route}`, async ({ page }) => {
-    await page.goto(route);
+    await page.goto(route, { waitUntil: "domcontentloaded" });
     const password = page.getByLabel("Password", { exact: true });
     await password.fill("visibility-test-password");
     await expect(password).toHaveAttribute("type", "password");
