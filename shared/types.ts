@@ -1,0 +1,110 @@
+export type SourceFile = { path: string; content: string };
+export type Finding = {
+  id: string;
+  title: string;
+  category: "security" | "reliability" | "maintainability" | "performance";
+  severity: "critical" | "high" | "medium" | "low";
+  confidence: number;
+  file: string;
+  startLine: number;
+  endLine: number;
+  description: string;
+  impact: string;
+  recommendation: string;
+  evidence: string;
+  engine: string;
+  verification: "hotspot" | "static-evidence";
+  status: "open" | "dismissed" | "resolved";
+};
+export type Review = {
+  id: string;
+  ownerId: string;
+  projectId?: string;
+  name: string;
+  source: string;
+  files: SourceFile[];
+  findings: Finding[];
+  status: "queued" | "running" | "completed" | "failed";
+  logs: string[];
+  createdAt: string;
+  score?: number;
+  error?: string;
+  ai: boolean;
+  revision: number;
+  github?: { owner: string; repo: string; pull?: number; ref: string };
+};
+export type Project = {
+  id: string;
+  ownerId: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  teamId?: string;
+};
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: "admin" | "member";
+  createdAt: string;
+};
+export type Session = {
+  id: string;
+  ownerId: string;
+  hash: string;
+  expiresAt: string;
+};
+export type Fix = {
+  id: string;
+  ownerId: string;
+  reviewId: string;
+  file: string;
+  original: string;
+  replacement: string;
+  diff: string;
+  status: "proposed" | "applied" | "reverted";
+  createdAt: string;
+  validation?: string;
+  baseRevision: number;
+  validationDetails?: { baseline: {status:string;output:string}; patched: {status:string;output:string}; beforeFindings:number; afterFindings:number };
+};
+export type Message = {
+  id: string;
+  ownerId: string;
+  reviewId: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+};
+export type Audit = {
+  id: string;
+  ownerId: string;
+  action: string;
+  resourceId: string;
+  createdAt: string;
+};
+export type Notification = {
+  id: string;
+  ownerId: string;
+  title: string;
+  reviewId: string;
+  read: boolean;
+  createdAt: string;
+};
+export type EntityMap = {
+  users: User;
+  projects: Project;
+  reviews: Review;
+  sessions: Session;
+  fixes: Fix;
+  messages: Message;
+  audit: Audit;
+  notifications: Notification;
+  integrations: { id: string; ownerId: string; provider: 'github'; encryptedToken: string; login: string; createdAt: string };
+  oauth: { id: string; ownerId: string; cookieHash: string; expiresAt: string; scope: string };
+  subscriptions: { id: string; ownerId: string; owner: string; repo: string; pull: number; ai: boolean; projectId?: string; createdAt: string };
+  deliveries: { id: string; ownerId: string; createdAt: string };
+  teams: { id:string; ownerId:string; name:string; members:{userId:string;role:'admin'|'editor'|'viewer'}[]; createdAt:string };
+  invitations: { id:string; ownerId:string; teamId:string; email:string; role:'editor'|'viewer'; expiresAt:string };
+};
