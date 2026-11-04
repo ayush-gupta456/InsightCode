@@ -3,6 +3,8 @@ import ts from "typescript";
 import { unzipSync } from "fflate";
 import { filesSchema, safePath, HttpError } from "./security.js";
 import type { Finding, SourceFile } from "../shared/types.js";
+import { javaFindings } from "./java-analysis.js";
+import { looksLikeJava } from "../shared/language.js";
 
 export function language(path: string) {
   const ext = path.split(".").pop()?.toLowerCase();
@@ -142,6 +144,7 @@ const rules: Rule[] = [
 export function analyze(files: SourceFile[]): Finding[] {
   const findings: Finding[] = [];
   for (const file of files) {
+    findings.push(...javaFindings(file));
     const lines = file.content.split(/\r?\n/);
     lines.forEach((text, index) => {
       if (/^\s*(\/\/|#|\*|<!--)/.test(text)) return;
@@ -187,7 +190,7 @@ export function score(findings: Finding[]) {
 }
 export function indexRepository(files: SourceFile[]) {
   return files.map((file) => {
-    const lang = language(file.path);
+    const lang = looksLikeJava(file.content) ? "java" : language(file.path);
     const symbols: { name: string; line: number; kind: string }[] = [];
     const imports: string[] = [];
     if (["javascript", "typescript"].includes(lang)) {

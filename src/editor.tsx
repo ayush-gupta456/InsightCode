@@ -6,6 +6,7 @@ import "monaco-editor/languages/definitions/typescript/register.js";
 import "monaco-editor/languages/definitions/python/register.js";
 import "monaco-editor/languages/definitions/java/register.js";
 import { useEffect, useRef } from "react";
+import { looksLikeJava } from "../shared/language";
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 loader.config({ monaco });
 const lang = (path: string) =>
@@ -59,7 +60,7 @@ export function CodeEditor({
     <Editor
       height="100%"
       path={path}
-      language={lang(path)}
+      language={looksLikeJava(value) ? "java" : lang(path)}
       value={value}
       onChange={(v) => onChange?.(v || "")}
       theme={

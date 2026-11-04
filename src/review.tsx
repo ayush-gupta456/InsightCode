@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { looksLikeJava, javaFilename } from "../shared/language";
 import {
   Link,
   useNavigate,
@@ -141,8 +144,14 @@ export function NewReview() {
                   onChange={(e) => setFilename(e.target.value)}
                   placeholder="main.ts"
                 />
-                <Badge>Auto language detection</Badge>
+                <Badge>Language from filename</Badge>
               </div>
+              {looksLikeJava(code) && !filename.endsWith(".java") && (
+                <div className="source-language-warning" role="status">
+                  This looks like Java, but the filename selects a different language.
+                  <button type="button" onClick={() => setFilename(javaFilename(code))}>Use {javaFilename(code)}</button>
+                </div>
+              )}
               <div className="submission-editor">
                 <CodeEditor
                   path={`draft/${filename}`}
@@ -352,7 +361,7 @@ export function NewReview() {
                 <strong>Gemini AI enrichment</strong>
                 <small>
                   {caps.data?.gemini
-                    ? "Send bounded source context to Google for deeper analysis."
+                    ? "Analyze logic, runtime errors and complexity using Google. Source is sent only when selected. Basic rules alone do not establish correctness."
                     : "Configure Gemini in your server settings to enable."}
                 </small>
               </span>
@@ -616,13 +625,16 @@ export function ReviewWorkspace() {
           </div>
           {tab === "findings" ? (
             <div className="findings-pane">
+              <div className="review-coverage" role="status">
+                {r.aiStatus === "failed" ? "AI analysis failed. Only static results are available; open Review logs for details." : !r.ai ? "Basic static review only. Enable AI on a new review for broader logic and complexity analysis." : r.aiStatus === "completed" ? "AI assessment available in Assistant. Findings are source-backed hypotheses, not executed tests." : "AI coverage: check Review logs for completion."}
+              </div>
               <div className="findings-summary">
                 <div>
                   <strong>
                     {r.score ?? "—"}
                     <small>/100</small>
                   </strong>
-                  <span>Review score</span>
+                  <span>Finding-based score · not correctness</span>
                 </div>
                 <select
                   aria-label="Filter severity"
@@ -645,7 +657,7 @@ export function ReviewWorkspace() {
                   }
                 >
                   {r.status === "completed"
-                    ? "No issues matched the active checks. This does not certify that the code is secure."
+                    ? `No findings match this view. ${r.ai ? "Check review logs for AI coverage or provider failures." : "AI analysis was not enabled; only limited static rules ran."} This does not establish correctness, termination, or security.`
                     : "Findings will appear here as checks complete."}
                 </Empty>
               ) : (
@@ -716,7 +728,7 @@ export function ReviewWorkspace() {
               )}
             </div>
           ) : tab === "chat" ? (
-            <Chat reviewId={r.id} />
+            <Chat reviewId={r.id} assessment={r.assessment} />
           ) : (
             <div className="index-pane">
               <h3>Source structure</h3>
@@ -838,7 +850,8 @@ export function ReviewWorkspace() {
     </>
   );
 }
-function Chat({ reviewId }: { reviewId: string }) {
+function Chat({ reviewId, assessment }: { reviewId: string; assessment?: string }) {
+  const [expanded, setExpanded] = useState(false);
   const q = useQuery({
     queryKey: ["messages", reviewId],
     queryFn: () => api<Message[]>(`/reviews/${reviewId}/messages`),
@@ -852,18 +865,23 @@ function Chat({ reviewId }: { reviewId: string }) {
       void client.invalidateQueries({ queryKey: ["messages", reviewId] });
     },
   });
-  return (
+  const panel = (
     <div className="chat-pane">
+      <div className="chat-toolbar">
+        <span>Code assistant</span>
+        <button type="button" onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>{expanded ? "Close expanded view" : "Expand response"}</button>
+      </div>
       <div className="messages">
+        {assessment && <article className="message"><strong>Review assessment & complexity</strong><div className="markdown-response"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{img:()=>null}}>{assessment}</ReactMarkdown></div></article>}
         {!q.data?.length && (
           <div className="chat-welcome">
             <Sparkles size={28} />
             <h3>A second perspective.</h3>
             <p>Ask about bugs, architecture, tests, or how this code works.</p>
             {[
-              "Explain the architecture",
-              "Where should I add validation?",
-              "Suggest useful tests",
+              "Find logical bugs, null dereferences, and non-terminating loops. Cite lines and give minimal corrections.",
+              "Analyze time and space complexity per method, including paths that never terminate.",
+              "Suggest edge-case tests for empty input, a single node, and cycles starting at the head.",
             ].map((s) => (
               <button key={s} onClick={() => setContent(s)}>
                 {s}
@@ -879,7 +897,11 @@ function Chat({ reviewId }: { reviewId: string }) {
         {q.data?.map((m) => (
           <div className={`message ${m.role}`} key={m.id}>
             <strong>{m.role === "user" ? "You" : "InsightCode"}</strong>
-            <p>{m.content}</p>
+            <div className="markdown-response"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{img:()=>null}}>{m.content}</ReactMarkdown></div>
+            {m.role === "assistant" && <button type="button" onClick={() => {
+              const url = URL.createObjectURL(new Blob([m.content], { type: "text/markdown" }));
+              const a = document.createElement("a"); a.href = url; a.download = "insightcode-response.md"; a.click(); URL.revokeObjectURL(url);
+            }}>Download full response</button>}
           </div>
         ))}
         {mutation.isPending && (
@@ -914,4 +936,5 @@ function Chat({ reviewId }: { reviewId: string }) {
       </form>
     </div>
   );
+  return expanded ? <Modal open onOpenChange={setExpanded} title="Code assistant" className="chat-reading-modal">{panel}</Modal> : panel;
 }

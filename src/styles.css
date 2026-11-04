@@ -1860,6 +1860,8 @@ progress::-webkit-progress-value {
 }
 .assistant-pane {
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -1990,6 +1992,7 @@ progress::-webkit-progress-value {
 }
 .messages {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 17px 13px;
 }
@@ -2042,6 +2045,7 @@ progress::-webkit-progress-value {
   background: var(--soft);
 }
 .chat-input {
+  flex-shrink: 0;
   display: flex;
   gap: 7px;
   padding: 12px;
@@ -2651,3 +2655,25 @@ summary {
     scroll-behavior: auto !important;
   }
 }
+
+/* Keep long review responses scrollable without hiding the composer. */
+.review-workspace > .code-pane, .review-workspace > .file-explorer { min-height: 0; }
+.assistant-pane > .tabs { flex-shrink: 0; }
+.chat-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; font-size: 12px; }
+.chat-toolbar button { min-height: 36px; font-size: 12px; }
+.chat-reading-modal { width: min(1100px, calc(100vw - 32px)); height: calc(100dvh - 48px); max-height: none; display: flex; flex-direction: column; overflow: hidden; }
+.chat-reading-modal .messages { padding: 16px; }
+.message { font-size: 14px; }
+.markdown-response { min-width: 0; overflow-wrap: anywhere; line-height: 1.7; }
+.markdown-response p { white-space: normal; font-size: 14px; margin: 10px 0; }
+.markdown-response strong { font-size: inherit; color: inherit; }
+.markdown-response h1, .markdown-response h2, .markdown-response h3 { font-size: 17px; margin: 20px 0 10px; }
+.markdown-response pre { max-width: 100%; overflow: auto; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+.markdown-response pre code { white-space: pre; font-size: 13px; }
+.markdown-response table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+.markdown-response th, .markdown-response td { padding: 8px; border: 1px solid var(--border); text-align: left; }
+.markdown-response ul, .markdown-response ol { padding-left: 22px; }
+.message > button { font-size: 12px; min-height: 36px; margin-top: 12px; }
+.source-language-warning { padding: 12px; background: var(--soft); font-size: 13px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+@media (max-width: 900px) { .chat-reading-modal { width: calc(100vw - 16px); height: calc(100dvh - 16px); padding: 12px; } }
+.review-coverage { padding: 12px; font-size: 12px; line-height: 1.6; border-bottom: 1px solid var(--border); color: var(--muted); }

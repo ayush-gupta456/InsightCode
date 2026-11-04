@@ -316,6 +316,7 @@ export async function createApp(store: Store, secret: string) {
     }
     try {
       review.status = "running";
+      review.aiStatus = review.ai ? "pending" : "disabled";
       review.logs.push("Source accepted. Starting deterministic analysis.");
       await saveReview(review);
       review.findings = analyze(review.files);
@@ -329,9 +330,14 @@ export async function createApp(store: Store, secret: string) {
         review.logs.push("Retrieving bounded context for Gemini.");
         await saveReview(review);
         try {
-          review.findings = await enrich(review.files, review.findings);
+          const result = await enrich(review.files, review.findings);
+          review.findings = result.findings;
+          review.assessment = result.assessment;
+          review.aiStatus = "completed";
+          if (result.rejected) review.logs.push(`${result.rejected} AI findings rejected because source evidence did not match.`);
           review.logs.push("Validated AI findings against source evidence.");
         } catch (e) {
+          review.aiStatus = "failed";
           review.logs.push(
             `AI enrichment unavailable: ${e instanceof HttpError ? e.message : "provider response could not be validated"}. Deterministic results retained.`,
           );

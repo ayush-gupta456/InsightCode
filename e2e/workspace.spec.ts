@@ -78,10 +78,10 @@ test("private workspace, source upload, findings, navigation and responsive layo
   ).toBeVisible();
   await page.getByRole("button", { name: "Assistant", exact: true }).click();
   await page
-    .getByRole("button", { name: "Explain the architecture", exact: true })
+    .getByRole("button", { name: "Find logical bugs, null dereferences, and non-terminating loops. Cite lines and give minimal corrections.", exact: true })
     .click();
   await expect(page.getByLabel("Ask the AI assistant")).toHaveValue(
-    "Explain the architecture",
+    "Find logical bugs, null dereferences, and non-terminating loops. Cite lines and give minimal corrections.",
   );
   await page.getByRole("button", { name: "Review logs", exact: true }).click();
   await expect(

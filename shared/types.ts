@@ -30,6 +30,8 @@ export type Review = {
   score?: number;
   error?: string;
   ai: boolean;
+  assessment?: string;
+  aiStatus?: "disabled" | "pending" | "completed" | "failed";
   revision: number;
   github?: { owner: string; repo: string; pull?: number; ref: string };
 };
