@@ -1498,6 +1498,31 @@ progress::-webkit-progress-value {
   border-radius: 12px;
   padding: 32px;
 }
+.password-field {
+  position: relative;
+}
+.password-field input {
+  width: 100%;
+  padding-right: 52px;
+}
+.password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.password-toggle:focus-visible {
+  outline: 2px solid #8b7cf8;
+  border-radius: 8px;
+}
 .auth-card h1 {
   font-size: 26px;
   line-height: 1.4;

@@ -39,6 +39,8 @@ import {
   Terminal,
   Sun,
   Moon,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { api, post, refreshSession, useSession } from "./api";
@@ -166,7 +168,7 @@ function Shell() {
   }, []);
   useEffect(() => {
     if (!token) return;
-    const socket = io({ auth: { token } });
+    const socket = io({ auth: { token }, transports: ["polling"] });
     socket.on("review:update", ({ id }: { id: string }) => {
       for (const key of [
         ["reviews"],
@@ -535,6 +537,7 @@ function Landing() {
 function Auth({ register = false }: { register?: boolean }) {
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { user } = useSession();
   if (user) return <Navigate to="/app" replace />;
@@ -598,18 +601,31 @@ function Auth({ register = false }: { register?: boolean }) {
               placeholder="you@company.com"
             />
           </label>
-          <label>
+          <label htmlFor="auth-password">
             Password
+          </label>
+          <div className="password-field">
             <input
+              id="auth-password"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               minLength={12}
               maxLength={72}
               required
               autoComplete={register ? "new-password" : "current-password"}
               placeholder="At least 12 characters"
             />
-          </label>
+            <button
+              type="button"
+              className="password-toggle"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              aria-controls="auth-password"
+              onClick={() => setShowPassword((visible) => !visible)}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
           <ErrorBox error={error} />
           <button className="primary" disabled={busy}>
             {busy
