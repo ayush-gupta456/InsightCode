@@ -28,6 +28,7 @@ import {
   GitBranch,
   LockKeyhole,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { api, post, useSession } from "./api";
 import { Badge, Empty, ErrorBox, Loading, Modal, PageTitle, date } from "./ui";
@@ -324,6 +325,16 @@ export function ReviewTable({
   loading?: boolean;
   error?: unknown;
 }) {
+  const { user } = useSession();
+  const client = useQueryClient();
+  const [deleting, setDeleting] = useState<Summary | null>(null);
+  const remove = useMutation({
+    mutationFn: (id: string) => api(`/reviews/${id}`, { method: "DELETE" }),
+    onSuccess: async () => {
+      setDeleting(null);
+      await client.invalidateQueries();
+    },
+  });
   if (loading) return <Loading />;
   if (error) return <ErrorBox error={error} />;
   if (!reviews?.length)
@@ -333,7 +344,14 @@ export function ReviewTable({
       </Empty>
     );
   return (
-    <div className="table-scroll">
+    <><Modal open={!!deleting} onOpenChange={(open) => { if (!open && !remove.isPending) setDeleting(null); }} title="Delete review?" description="This permanently removes this review, its source snapshot, findings, assistant conversation and saved fixes. Your GitHub repository is unaffected.">
+      <p className="delete-review-name">{deleting?.name}</p>
+      <ErrorBox error={remove.error} />
+      <div className="review-dialog-actions">
+        <button disabled={remove.isPending} onClick={() => setDeleting(null)}>Cancel</button>
+        <button className="danger" disabled={remove.isPending} onClick={() => deleting && remove.mutate(deleting.id)}>{remove.isPending ? "Deleting…" : "Delete review"}</button>
+      </div>
+    </Modal><div className="table-scroll">
       <table>
         <thead>
           <tr>
@@ -342,7 +360,7 @@ export function ReviewTable({
             <th>Findings</th>
             <th>Score</th>
             <th>Created</th>
-            <th />
+            <th><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
@@ -356,7 +374,7 @@ export function ReviewTable({
                   <span>
                     <strong>{r.name}</strong>
                     <small>
-                      {r.fileCount} files · {r.source}
+                      {r.fileCount} {r.fileCount === 1 ? "file" : "files"} · {r.source}
                     </small>
                   </span>
                 </Link>
@@ -386,15 +404,18 @@ export function ReviewTable({
               </td>
               <td className="muted">{date(r.createdAt)}</td>
               <td>
+                <div className="review-row-actions">
                 <Link aria-label={`Open ${r.name}`} to={`/app/reviews/${r.id}`}>
                   <ArrowUpRight size={17} />
                 </Link>
+                {r.ownerId === user?.id && <button className="icon-button delete-review" aria-label={`Delete ${r.name}`} title={['queued','running'].includes(r.status) ? 'Wait for this review to finish' : 'Delete review'} disabled={['queued','running'].includes(r.status)} onClick={() => { remove.reset(); setDeleting(r); }}><Trash2 size={16} /></button>}
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
+    </div></>
   );
 }
 export function ReviewList() {

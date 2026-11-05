@@ -285,6 +285,21 @@ test("account → project → review → finding → patch → revert with acces
       (await reloaded.get("reviews", reviewId))?.name,
       "API security review",
     );
+    assert.equal((await request(`/reviews/${reviewId}`, 'DELETE', undefined, stranger.body.token)).status, 404);
+    const saved = (await store.get('reviews', reviewId))!;
+    await store.put('reviews', {...saved, status:'running'});
+    assert.equal((await request(`/reviews/${reviewId}`, 'DELETE', undefined, token)).status, 409);
+    await store.put('reviews', saved);
+    await store.put('messages', {id:'delete-message',ownerId:saved.ownerId,reviewId,role:'assistant',content:'Test',createdAt:new Date().toISOString()});
+    assert.equal((await request(`/reviews/${reviewId}`, 'DELETE', undefined, token)).status, 200);
+    assert.equal((await request(`/reviews/${reviewId}`, 'GET', undefined, token)).status, 404);
+    assert.equal((await request(`/reviews/${reviewId}`, 'DELETE', undefined, token)).status, 404);
+    for (const collection of ['messages','fixes','notifications'] as const)
+      assert.equal((await store.list(collection)).filter(item=>item.reviewId===reviewId).length, 0);
+    assert.ok(!(await request('/reviews', 'GET', undefined, token)).body.some((r: any)=>r.id===reviewId));
+    const afterDelete = new Store(directory, '');
+    await afterDelete.init();
+    assert.equal(await afterDelete.get('reviews',reviewId),undefined);
   } finally {
     await closeQueue();
     await new Promise<void>((resolve) => server.close(() => resolve()));

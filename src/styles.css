@@ -2688,3 +2688,37 @@ summary {
 .source-language-warning { padding: 12px; background: var(--soft); font-size: 13px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 @media (max-width: 900px) { .chat-reading-modal { width: calc(100vw - 16px); height: calc(100dvh - 16px); padding: 12px; } }
 .review-coverage { padding: 12px; font-size: 12px; line-height: 1.6; border-bottom: 1px solid var(--border); color: var(--muted); }
+
+/* Theme-aware dashboard surfaces and accessible review actions. */
+:root[data-theme="light"] .overview-banner {
+  background: linear-gradient(110deg, #f0ebff, #f9f7ff);
+  border-color: #d7cdf4;
+}
+:root[data-theme="light"] .overview-banner h2 { color: #30234f; }
+:root[data-theme="light"] .overview-banner p { color: #625477; }
+:root[data-theme="light"] .overview-banner a,
+:root[data-theme="light"] .local-card a { color: #6044ba; }
+:root[data-theme="light"] .local-card { background: #f5f2fc; }
+:root[data-theme="light"] .nav-group a { color: #5d6880; }
+:root[data-theme="light"] .nav-group a.active,
+:root[data-theme="light"] .nav-group a.active svg { color: #6044ba; }
+:root[data-theme="light"] .badge.green { color: #176448; background: #e8f6ef; border-color: #b9decb; }
+:root[data-theme="light"] .badge.violet { color: #6044a8; background: #eee8fa; border-color: #d7c9ef; }
+:root[data-theme="light"] .badge.red { color: #a42d42; background: #fdeef0; border-color: #efc4cd; }
+:root[data-theme="light"] .badge.amber { color: #805310; background: #fff4df; border-color: #ead3a7; }
+:root[data-theme="light"] .ink-green { color: #16704e; }
+:root[data-theme="light"] .ink-amber { color: #8b5a12; }
+:root[data-theme="light"] .ink-violet { color: #6044ba; }
+:root[data-theme="light"] .ink-red { color: #b3334d; }
+:root[data-theme="light"] .button.primary,
+:root[data-theme="light"] button.primary { background: #6950d0; border-color: #6950d0; }
+.review-row-actions { display: flex; align-items: center; gap: 4px; }
+.review-row-actions > a, .review-row-actions > button { min-width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; }
+.review-row-actions > a:hover { background: var(--panel-hover); }
+.delete-review { color: var(--muted); }
+.delete-review:hover:not(:disabled) { color: #c23b51; background: #c23b5112; border-color: #c23b5144; }
+.review-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+button.danger { background: #b62e43; border-color: #b62e43; color: white; }
+button.danger:hover { background: #982338; }
+.delete-review-name { overflow-wrap: anywhere; font-weight: 600; }
+.review-row-actions :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

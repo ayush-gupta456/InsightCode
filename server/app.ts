@@ -484,6 +484,20 @@ export async function createApp(store: Store, secret: string) {
   app.get("/api/reviews/:id", async (req, res) =>
     res.json(await owned("reviews", String(req.params.id), res.locals.userId)),
   );
+  app.delete("/api/reviews/:id", async (req, res) => {
+    const review = await owned("reviews", String(req.params.id), res.locals.userId);
+    if (review.ownerId !== res.locals.userId) throw new HttpError(403, "Only the review creator can delete it");
+    if (processing.has(review.id) || ["queued", "running"].includes(review.status))
+      throw new HttpError(409, "Wait for the review to finish before deleting it");
+    for (const collection of ["messages", "fixes", "notifications"] as const) {
+      for (const item of await store.list(collection)) {
+        if (item.reviewId === review.id) await store.remove(collection, item.id);
+      }
+    }
+    await store.remove("reviews", review.id);
+    await audit(res.locals.userId, "review.deleted", review.id);
+    res.json({ deleted: true });
+  });
   app.get("/api/reviews/:id/index", async (req, res) =>
     res.json(
       indexRepository(
