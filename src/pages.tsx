@@ -122,9 +122,9 @@ export function Dashboard() {
           ],
           [
             Activity,
-            "Quality score",
+            "Finding-based score",
             a?.score == null ? "—" : `${a.score}/100`,
-            "Based on open findings",
+            "Not a measure of correctness",
             "green",
           ],
         ].map(([Icon, label, value, desc, tone]: any) => (

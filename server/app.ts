@@ -29,6 +29,7 @@ import {
 } from "./analysis.js";
 import { githubGet, repositoryFiles } from "./github.js";
 import { enrich, assistantReply, proposeFix } from "./ai.js";
+import { aiFailureMessage } from "./ai-errors.js";
 import type { Review, User, Fix, EntityMap } from "../shared/types.js";
 import { createLocks } from './locks.js';
 import { githubToken, mountOAuthCallback, mountIntegrationRoutes, publishComment } from './integrations.js';
@@ -103,6 +104,8 @@ export async function createApp(store: Store, secret: string) {
       status: "ok",
       persistence: process.env.MONGODB_URI ? "mongodb" : "local",
       aiConfigured: !!process.env.GEMINI_API_KEY,
+      analysisVersion: "java-traversal-v1",
+      revision: process.env.RENDER_GIT_COMMIT || "local",
     }),
   );
   const safeUser = (u: User) => ({
@@ -339,7 +342,7 @@ export async function createApp(store: Store, secret: string) {
         } catch (e) {
           review.aiStatus = "failed";
           review.logs.push(
-            `AI enrichment unavailable: ${e instanceof HttpError ? e.message : "provider response could not be validated"}. Deterministic results retained.`,
+            `AI enrichment unavailable: ${aiFailureMessage(e)}. Deterministic results retained.`,
           );
         }
       }
@@ -593,6 +596,7 @@ export async function createApp(store: Store, secret: string) {
       content,
       contextFor(review.files, content),
       history,
+      review.findings,
     );
     const base = {
       ownerId: res.locals.userId,
