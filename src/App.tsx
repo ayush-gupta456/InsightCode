@@ -42,7 +42,9 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { ThemeControl } from "./theme";
+import { Recovery } from "./recovery";
 import { api, post, refreshSession, useSession } from "./api";
 import { Badge, ErrorBox, Logo, Modal } from "./ui";
 import {
@@ -102,6 +104,8 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Auth />} />
       <Route path="/register" element={<Auth register />} />
+      <Route path="/forgot-password" element={<Recovery />} />
+      <Route path="/reset-password" element={<Recovery />} />
       <Route path="/app" element={<Shell />}>
         <Route index element={<Dashboard />} />
         <Route path="projects" element={<Projects />} />
@@ -137,7 +141,6 @@ function Shell() {
   const [search, setSearch] = useState("");
   const [notifications, setNotifications] = useState(false);
   const [profile, setProfile] = useState(false);
-  const [light, setLight] = useState(localStorage.getItem("theme") === "light");
   const client = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -152,10 +155,6 @@ function Shell() {
     enabled: !!user,
     refetchInterval: 30_000,
   });
-  useEffect(() => {
-    document.documentElement.dataset.theme = light ? "light" : "dark";
-    localStorage.setItem("theme", light ? "light" : "dark");
-  }, [light]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -269,13 +268,7 @@ function Shell() {
               <span>Search anything…</span>
               <kbd>⌘ K</kbd>
             </button>
-            <button
-              className="icon-button"
-              aria-label="Toggle color theme"
-              onClick={() => setLight(!light)}
-            >
-              {light ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
+            <ThemeControl />
             <button
               className="icon-button notification-button"
               aria-label={`Notifications, ${unread} unread`}
@@ -412,6 +405,7 @@ function Landing() {
         </Link>
         <div>
           <a href="#workflow">How it works</a>
+          <ThemeControl />
           <Link to="/login">Sign in</Link>
           <Link className="button primary" to="/register">
             Open your workspace <ArrowUpRight size={16} />
@@ -540,13 +534,15 @@ function Auth({ register = false }: { register?: boolean }) {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { user } = useSession();
+  const authConfig = useQuery({queryKey:['auth-config'],queryFn:()=>api<{google:boolean;passwordReset:boolean}>('/auth/config')});
+  const callbackError = new URLSearchParams(location.search).get('error');
   if (user) return <Navigate to="/app" replace />;
   return (
     <div className="auth-page">
-      <Link className="auth-logo" to="/">
+      <div className="auth-topbar"><Link className="auth-logo" to="/">
         <Logo />
-      </Link>
-      <div className="auth-card">
+      </Link><ThemeControl /></div>
+      <motion.div className="auth-card" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>
         <div className="empty-icon">
           <Command size={26} />
         </div>
@@ -558,6 +554,9 @@ function Auth({ register = false }: { register?: boolean }) {
             ? "Create your private InsightCode workspace."
             : "Pick up where your last review left off."}
         </p>
+        {authConfig.data?.google ? <a className="button google-signin" href="/api/auth/google/start">Continue with Google</a> : <button className="google-signin" disabled title="Google sign-in is not configured yet">Continue with Google · coming soon</button>}
+        <div className="auth-divider"><span>or continue with email</span></div>
+        {callbackError && <ErrorBox error={callbackError === 'existing-account' ? 'An account already uses this email. Sign in with your password or use password recovery.' : 'Google sign-in was cancelled or could not be completed. Please try again.'} />}
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -609,11 +608,11 @@ function Auth({ register = false }: { register?: boolean }) {
               id="auth-password"
               name="password"
               type={showPassword ? "text" : "password"}
-              minLength={12}
+              minLength={register ? 12 : 1}
               maxLength={72}
               required
               autoComplete={register ? "new-password" : "current-password"}
-              placeholder="At least 12 characters"
+              placeholder={register ? "At least 12 characters" : "Enter your password"}
             />
             <button
               type="button"
@@ -626,6 +625,7 @@ function Auth({ register = false }: { register?: boolean }) {
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+          {!register && <Link className="forgot-link" to="/forgot-password">Forgot password?</Link>}
           <ErrorBox error={error} />
           <button className="primary" disabled={busy}>
             {busy
@@ -642,7 +642,7 @@ function Auth({ register = false }: { register?: boolean }) {
             {register ? "Sign in" : "Create a workspace"}
           </Link>
         </p>
-      </div>
+      </motion.div>
       <div className="auth-foot">
         <ShieldCheck size={15} /> Your source stays in your workspace unless you
         enable AI analysis.

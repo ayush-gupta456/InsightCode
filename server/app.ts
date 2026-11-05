@@ -30,6 +30,7 @@ import {
 import { githubGet, repositoryFiles } from "./github.js";
 import { enrich, assistantReply, proposeFix } from "./ai.js";
 import { aiFailureMessage } from "./ai-errors.js";
+import { mountAccountRecovery } from './account-recovery.js';
 import type { Review, User, Fix, EntityMap } from "../shared/types.js";
 import { createLocks } from './locks.js';
 import { githubToken, mountOAuthCallback, mountIntegrationRoutes, publishComment } from './integrations.js';
@@ -127,10 +128,11 @@ export async function createApp(store: Store, secret: string) {
       id: randomUUID(),
       ownerId: user.id,
       hash: hashToken(refresh),
+      version: user.authVersion || 0,
       expiresAt: new Date(Date.now() + 7 * 86400_000).toISOString(),
     });
     res.cookie("refresh", refresh, cookieOptions);
-    return { token: await tokens.sign(user.id), user: safeUser(user) };
+    return { token: await tokens.sign(user.id, user.authVersion || 0), user: safeUser(user) };
   }
   const credentials = z.object({
     email: z
@@ -140,6 +142,7 @@ export async function createApp(store: Store, secret: string) {
     password: z.string().min(12).max(72).refine(value => Buffer.byteLength(value) <= 72, 'Password must fit within 72 UTF-8 bytes'),
     name: z.string().trim().min(2).max(80).optional(),
   });
+  mountAccountRecovery(app,store,authLimit,issueSession,locked);
   app.post("/api/auth/register", authLimit, async (req, res) => {
     const input = credentials.parse(req.body);
     await locked(`register:${input.email}`, async () => {
@@ -182,7 +185,7 @@ export async function createApp(store: Store, secret: string) {
       throw new HttpError(401, "Session expired");
     if (!(await store.consume("sessions", session.id))) throw new HttpError(401, 'Session already used');
     const user = await store.get("users", session.ownerId);
-    if (!user) throw new HttpError(401, "Account unavailable");
+    if (!user || (session.version || 0) !== (user.authVersion || 0)) throw new HttpError(401, "Session expired");
     res.json(await issueSession(user, res));
   });
   app.post("/api/auth/logout", async (req, res) => {
@@ -194,9 +197,12 @@ export async function createApp(store: Store, secret: string) {
   });
   app.use("/api", async (req, res, next) => {
     try {
-      res.locals.userId = await tokens.verify(
+      const claims = await tokens.claims(
         req.headers.authorization?.replace(/^Bearer /, "") || "",
       );
+      const user = claims.sub ? await store.get('users',claims.sub) : undefined;
+      if(!user || (claims.version || 0) !== (user.authVersion || 0)) throw new Error('Session revoked');
+      res.locals.userId = user.id;
       next();
     } catch {
       next(new HttpError(401, "Sign in to continue"));

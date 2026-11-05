@@ -48,12 +48,15 @@ export type User = {
   name: string;
   email: string;
   passwordHash: string;
+  googleId?: string;
+  authVersion?: number;
   role: "admin" | "member";
   createdAt: string;
 };
 export type Session = {
   id: string;
   ownerId: string;
+  version?: number;
   hash: string;
   expiresAt: string;
 };
@@ -95,6 +98,8 @@ export type Notification = {
   createdAt: string;
 };
 export type EntityMap = {
+  passwordResets: { id:string; ownerId:string; expiresAt:string; version:number };
+  googleStates: { id:string; ownerId:string; expiresAt:string; binding:string; verifier:string; nonce:string };
   users: User;
   projects: Project;
   reviews: Review;

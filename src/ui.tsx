@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, ArrowUpRight, Code2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { motion } from "motion/react";
 export function Logo() {
   return (
     <span className="logo">
@@ -106,7 +107,7 @@ export function Modal({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="overlay" />
-        <Dialog.Content className={`modal ${className}`}>
+        <Dialog.Content asChild><motion.div className={`modal ${className}`} initial={{opacity:0}} animate={{opacity:1}} transition={{duration:.18,ease:'easeOut'}}>
           <div className="section-heading">
             <Dialog.Title>{title}</Dialog.Title>
             <Dialog.Close className="icon-button" aria-label="Close dialog">
@@ -117,7 +118,7 @@ export function Modal({
             {description || title}
           </Dialog.Description>
           {children}
-        </Dialog.Content>
+        </motion.div></Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
   );

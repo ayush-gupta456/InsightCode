@@ -22,7 +22,10 @@ const io = new Server(server, {
 });
 io.use(async (socket, next) => {
   try {
-    socket.data.userId = await tokens.verify(socket.handshake.auth.token);
+    const claims = await tokens.claims(socket.handshake.auth.token);
+    const user = claims.sub ? await store.get('users',claims.sub) : undefined;
+    if(!user || (claims.version || 0)!==(user.authVersion || 0)) throw new Error('Revoked session');
+    socket.data.userId = user.id;
     next();
   } catch {
     next(new Error("Unauthorized"));

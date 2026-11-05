@@ -56,8 +56,8 @@ export function authTokens(secret: string) {
     throw new Error("JWT_SECRET must be at least 32 characters");
   const key = new TextEncoder().encode(secret);
   return {
-    sign: (id: string) =>
-      new SignJWT({})
+    sign: (id: string, version = 0) =>
+      new SignJWT({ version })
         .setProtectedHeader({ alg: "HS256" })
         .setSubject(id)
         .setIssuer("insightcode")
@@ -65,6 +65,7 @@ export function authTokens(secret: string) {
         .setIssuedAt()
         .setExpirationTime("15m")
         .sign(key),
+    claims: async (token: string) => (await jwtVerify(token,key,{issuer:'insightcode',audience:'insightcode-app',algorithms:['HS256']})).payload,
     verify: async (token: string) =>
       (
         await jwtVerify(token, key, {
