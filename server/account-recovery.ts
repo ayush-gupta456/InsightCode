@@ -7,6 +7,7 @@ import { Store } from "./store.js";
 import type { User } from "../shared/types.js";
 import { HttpError, hashToken, randomToken } from "./security.js";
 import nodemailer from "nodemailer";
+import {gmailReady,sendGmailReset} from './gmail-mail.js';
 export function smtpOptions(env = process.env) {
   const port = Number(env.SMTP_PORT || 587);
   if (
@@ -43,6 +44,10 @@ const password = z
     "Password must fit within 72 UTF-8 bytes",
   );
 export async function deliverReset(email: string, url: string) {
+  if(process.env.AUTH_EMAIL_PROVIDER==='gmail' || gmailReady()) {
+    await sendGmailReset(email,url);
+    return;
+  }
   const smtp = smtpOptions();
   if (smtp) {
     const transport = nodemailer.createTransport(smtp);
@@ -91,9 +96,9 @@ export function mountAccountRecovery(
   const googleReady = () =>
     !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
   const mailReady = () =>
-    !!(
+    process.env.AUTH_EMAIL_PROVIDER==='gmail' ? gmailReady() : !!(
       process.env.AUTH_EMAIL_FROM &&
-      (smtpOptions() || process.env.RESEND_API_KEY)
+      (gmailReady() || smtpOptions() || process.env.RESEND_API_KEY)
     );
   app.get("/api/auth/config", (_req, res) =>
     res.json({ google: googleReady(), passwordReset: mailReady() }),

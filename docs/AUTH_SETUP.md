@@ -54,3 +54,31 @@ Replace the placeholder with the real app password directly in Render; remove th
 Google sign-in uses separate OAuth credentials; the SMTP app password does not enable Google sign-in. Actual email delivery remains unverified until credentials and an SMTP-capable host are configured.
 
 References: https://render.com/docs/free and https://support.google.com/mail/answer/185833
+
+## Gmail API on Render Free (recommended for this deployment)
+
+This sends through HTTPS port 443. It does not use SMTP or an app password. Google sign-in retains its existing GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET configuration and only requests identity scopes.
+
+1. In Google Cloud Console, enable **Gmail API**. Prefer a separate OAuth web client for the sending mailbox. Configure the consent screen and add `create.personal456@gmail.com` as a test user while testing.
+2. Add `https://developers.google.com/oauthplayground` as an authorized redirect URI for that sending client.
+3. Open https://developers.google.com/oauthplayground . In the gear/settings panel select **Use your own OAuth credentials** and enter the sending client's ID and secret. Use offline access and a consent prompt.
+4. In Step 1 enter only `https://www.googleapis.com/auth/gmail.send`, select **Authorize APIs**, and sign in as `create.personal456@gmail.com`. This permission lets the application send email from that mailbox. Approve it yourself.
+5. In Step 2 select **Exchange authorization code for tokens**. Copy the **refresh token** directly to Render, not to chat or Git. Use your own credentials: Playground's default credentials are unsuitable for persistent production tokens.
+6. Set these backend environment variables in Render:
+
+```dotenv
+AUTH_EMAIL_PROVIDER=gmail
+GMAIL_CLIENT_ID=<sending OAuth client ID>
+GMAIL_CLIENT_SECRET=<sending OAuth client secret>
+GMAIL_REFRESH_TOKEN=<mailbox refresh token>
+AUTH_EMAIL_FROM=InsightCode <create.personal456@gmail.com>
+FRONTEND_ORIGIN=https://insightcode.vercel.app
+```
+
+7. Remove SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASS from Render once migrating. Keep PORT and your GOOGLE_* sign-in variables. Deploy the latest commit, request a reset for an existing account you control, and verify receipt and successful password change.
+
+Explicit Gmail mode fails safely if credentials are missing or revoked; it does not silently fall back to blocked SMTP. Provider responses and tokens are not returned to the browser. Configuration presence does not establish successful delivery.
+
+**Token lifetime:** Google external apps in Testing normally issue refresh tokens that expire after seven days for Gmail scopes. Before relying on unattended delivery, configure an appropriate production consent status and satisfy Google's applicable verification requirements. Publishing does not prevent revocation or other token expiry conditions. Reauthorize if the token is revoked. Gmail sending quotas still apply.
+
+References: https://developers.google.com/workspace/gmail/api/guides/sending and https://developers.google.com/identity/protocols/oauth2
