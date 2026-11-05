@@ -2750,3 +2750,46 @@ button:focus-visible,a:focus-visible { outline:2px solid var(--accent); outline-
 :root[data-theme="light"] .preview-body pre { color:#364258; }
 :root[data-theme="light"] .code-purple { color:#6842b3; }
 :root[data-theme="light"] .code-green { color:#19734e; }
+
+/* Responsive navigation and readable mobile content. */
+body { min-width: 320px; }
+.landing-hero p { color: var(--muted); }
+.mobile-navigation nav { display:grid; gap:20px; }
+.mobile-navigation h3 { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin:0 0 8px; }
+.mobile-navigation nav a { display:flex; align-items:center; gap:12px; min-height:44px; padding:10px 12px; border-radius:8px; }
+.mobile-navigation nav a.active { background:var(--soft); color:var(--accent); }
+.mobile-navigation > .button { margin-top:20px; }
+@media(max-width:760px) {
+  .app-shell .sidebar { display:none; }
+  .app-shell .main-shell { margin-left:0; width:100%; min-width:0; }
+  .topbar { position:sticky; top:0; z-index:20; background:var(--panel); min-height:64px; padding:8px 12px; }
+  .breadcrumbs { min-width:0; font-size:13px; gap:8px; }
+  .breadcrumbs > span { display:none; }
+  .breadcrumbs strong { max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .top-actions { gap:8px; }
+  .top-actions > .avatar { display:none; }
+  .topbar .icon-button,.topbar .search-trigger { min-width:44px; min-height:44px; }
+  .theme-control button { min-width:40px; min-height:40px; }
+  .topbar .theme-control button > span:not(.theme-selected) { display:none; }
+  .page { padding:24px 16px; }
+  .page-title p,.overview-banner p { font-size:14px; line-height:1.65; }
+  .page-title .button,.button { min-height:44px; font-size:13px; }
+  .stat-card p { font-size:12px; line-height:1.5; }
+  .stat-card { min-width:0; padding:16px; }
+  .page-title h1 { font-size:clamp(24px,6vw,30px); overflow-wrap:anywhere; }
+  input,select,textarea { font-size:16px; }
+  .landing > header { height:auto; min-height:80px; padding:20px 0; flex-wrap:wrap; gap:18px; }
+  .landing > header > div { flex-wrap:wrap; gap:12px; }
+  .landing > header > div > .button { font-size:13px; padding:10px 14px; }
+  .landing-hero h1 { font-size:clamp(32px,7vw,48px); letter-spacing:-1.2px; text-wrap:balance; }
+  .landing-hero p { font-size:16px; line-height:1.7; }
+  .landing-hero { padding:48px 0; }
+  .preview-toolbar > span:nth-child(2) { font-size:11px; overflow-wrap:anywhere; }
+  .file-list button { font-size:12px; min-height:44px; }
+  .app-footer { font-size:11px; gap:12px; flex-wrap:wrap; }
+}
+@media(max-width:380px) {
+  .topbar .notification-button { display:none; }
+  .breadcrumbs strong { max-width:100px; }
+  .stat-grid { gap:10px; }
+}

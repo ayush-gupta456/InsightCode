@@ -137,6 +137,7 @@ export default function App() {
 function Shell() {
   const { user, token, ready } = useSession();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
   const [command, setCommand] = useState(false);
   const [search, setSearch] = useState("");
   const [notifications, setNotifications] = useState(false);
@@ -250,7 +251,7 @@ function Shell() {
             <button
               className="icon-button"
               aria-label="Toggle sidebar"
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={() => matchMedia('(max-width: 760px)').matches ? setMobileMenu(true) : setCollapsed(!collapsed)}
             >
               {collapsed ? (
                 <PanelLeftOpen size={18} />
@@ -263,7 +264,7 @@ function Shell() {
             <strong>{current}</strong>
           </div>
           <div className="top-actions">
-            <button className="search-trigger" onClick={() => setCommand(true)}>
+            <button className="search-trigger" aria-label="Search workspace" onClick={() => setCommand(true)}>
               <Search size={15} />
               <span>Search anything…</span>
               <kbd>⌘ K</kbd>
@@ -293,6 +294,10 @@ function Shell() {
           </span>
         </footer>
       </div>
+      <Modal open={mobileMenu} onOpenChange={setMobileMenu} title="Workspace navigation" className="mobile-navigation">
+        <nav aria-label="Workspace pages">{nav.map(group=><section key={group.label}><h3>{group.label}</h3>{group.items.map(([label,path,Icon])=><NavLink key={path} end to={path} onClick={()=>setMobileMenu(false)}><Icon size={20}/>{label}</NavLink>)}</section>)}</nav>
+        <button className="button" onClick={()=>{setMobileMenu(false);setProfile(true);}}>Account options</button>
+      </Modal>
       <Modal
         open={command}
         onOpenChange={setCommand}
