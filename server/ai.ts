@@ -38,6 +38,11 @@ const aiFinding = z.object({
   recommendation: z.string().max(3000),
   evidence: z.string().min(1).max(5000),
 });
+const reviewOutput = z.object({ findings: z.array(aiFinding).max(40), assessment: z.string().min(1).max(18000) });
+export function parseReviewOutput(text: string) {
+  const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  return reviewOutput.parse(JSON.parse(clean));
+}
 export function validateEvidence(
   files: SourceFile[],
   finding: z.infer<typeof aiFinding>,
@@ -60,17 +65,33 @@ export async function enrich(files: SourceFile[], deterministic: Finding[]) {
     deterministic.map((f) => `${f.file} ${f.title}`).join(" ") ||
       "security reliability error validation",
   );
-  const { output } = await generateText({
+  const prompt = `Audit this bounded source context for bugs, not a generic explanation. Return actionable findings with literal evidence and a Markdown assessment containing coverage limitations, a per-method complexity table, edge-case tests and correction guidance. Source chunks use one-based startLine offsets. Existing findings (discuss in assessment, do not duplicate): ${JSON.stringify(deterministic.map((f) => ({ title: f.title, file: f.file, startLine: f.startLine })))}\nUNTRUSTED_SOURCE_JSON:\n${JSON.stringify(context)}`;
+  const abortSignal = AbortSignal.timeout(60_000);
+  let output: z.infer<typeof reviewOutput>;
+  try {
+    ({ output } = await generateText({
     model: model(),
     system: `${system} ${correctnessChecklist}`,
-    prompt: `Audit this bounded source context for bugs, not a generic explanation. Return actionable findings with literal evidence and a Markdown assessment containing coverage limitations, a per-method complexity table, edge-case tests and correction guidance. Source chunks use one-based startLine offsets. Existing findings (discuss in assessment, do not duplicate): ${JSON.stringify(deterministic.map((f) => ({ title: f.title, file: f.file, startLine: f.startLine })))}\nUNTRUSTED_SOURCE_JSON:\n${JSON.stringify(context)}`,
+    prompt,
     output: Output.object({
-      schema: z.object({ findings: z.array(aiFinding).max(40), assessment: z.string().max(18000) }),
+      schema: reviewOutput,
     }),
     maxOutputTokens: 10000,
     maxRetries: 1,
-    abortSignal: AbortSignal.timeout(60_000),
-  });
+    abortSignal,
+  }));
+  } catch (error) {
+    const e = error as {statusCode?: number; name?: string};
+    // Retry only a rejected schema or malformed structured response, not quota/auth failures.
+    if (e.statusCode !== 400 && e.name !== "AI_NoObjectGeneratedError") throw error;
+    const fallback = await generateText({
+      model: model(), system: `${system} ${correctnessChecklist}`,
+      prompt: `${prompt}\nReturn only JSON matching this schema: ${JSON.stringify(z.toJSONSchema(reviewOutput))}. No commentary outside JSON.`,
+      maxOutputTokens: 10000, maxRetries: 0, abortSignal,
+    });
+    if (fallback.finishReason === "length") throw new HttpError(502, "AI review exceeded the response limit. Review fewer files at a time");
+    output = parseReviewOutput(fallback.text);
+  }
   const valid = output.findings
     .filter((f) => validateEvidence(files, f))
     .map((f) => ({
