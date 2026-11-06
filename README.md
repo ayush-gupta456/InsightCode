@@ -1,18 +1,57 @@
-# InsightCode
+<div align="center">
+  <img src="public/favicon.svg" width="72" height="72" alt="InsightCode logo" />
+  <h1>InsightCode</h1>
+  <p><strong>Understand your code. Review with evidence. Change with confidence.</strong></p>
+  <p>A private code-review workspace combining static analysis, optional AI assistance,<br />and a review process that keeps you in control.</p>
+  <p>
+    <a href="https://insightcode.vercel.app"><strong>Open workspace</strong></a> ·
+    <a href="#quick-start">Quick start</a> ·
+    <a href="docs/DEPLOYMENT.md">Deploy your own</a> ·
+    <a href="docs/API.md">API reference</a>
+  </p>
+  <p>
+    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" />
+    <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?style=flat-square&amp;logo=react&amp;logoColor=white" />
+    <img alt="Node.js 22" src="https://img.shields.io/badge/Node.js-22-417E38?style=flat-square&amp;logo=nodedotjs&amp;logoColor=white" />
+    <img alt="Status: Beta" src="https://img.shields.io/badge/Status-Beta-6750C5?style=flat-square" />
+  </p>
+</div>
 
-**A private code-review workspace with source-backed findings, optional AI assistance, and changes you approve.**
+---
 
-[Open InsightCode](https://insightcode.vercel.app) · [Deployment](docs/DEPLOYMENT.md) · [Authentication setup](docs/AUTH_SETUP.md) · [API reference](docs/API.md)
+## A clearer view of every finding
 
-## What you can do
+![InsightCode review workspace showing source evidence beside an analysis finding](docs/screenshots/review-workspace.png)
 
-- Paste code, upload source files or bounded ZIP archives, and import GitHub repositories or pull requests.
-- Inspect findings alongside source, symbols, evidence, and severity. Security hotspots require assessment.
-- Request optional Gemini analysis, explanations and proposed fixes. Source is sent to the provider when AI is enabled.
-- Preview patches, approve changes to a review snapshot, and revert them. Repository publishing is a separate explicit action.
-- Organize projects, inspect analytics, and delete completed reviews you own.
-- Use responsive light/dark interfaces with keyboard-accessible controls and reduced-motion support.
-- Sign in with email/password or configured Google OAuth. Recover passwords through Gmail API, SMTP on supported hosts, or Resend.
+*Review workspace example. Visual details may differ from the latest deployment.*
+
+## Built around your review workflow
+
+| Bring your code | Understand the evidence | Make an informed change |
+| --- | --- | --- |
+| Paste snippets, upload files or bounded ZIP archives, or import GitHub repositories and pull requests. | Explore source, symbols, severity and findings in one workspace. Add Gemini assistance when needed. | Preview a patch, approve changes to an isolated snapshot, and revert when necessary. |
+
+### What makes it useful
+
+- **Evidence beside the code.** Findings point to source locations; security hotspots remain clearly marked for human assessment.
+- **Optional, contextual AI.** Gemini can explain code, analyze issues and suggest fixes. Enabling AI sends relevant source to the configured provider.
+- **Changes you approve.** Snapshot patches and reverts are separate from explicitly authorized repository publishing.
+- **An organized workspace.** Projects, review history, finding-based analytics and deletion of completed reviews you own.
+- **Comfortable across screens.** Responsive layouts, light and dark themes, keyboard controls and reduced-motion support.
+- **Flexible authentication.** Email/password, configured Google sign-in and password recovery through Gmail API, supported SMTP hosts or Resend.
+
+> **Analysis supports judgment; it does not replace it.** Static rules and AI can miss defects. Scores reflect detected findings, not proof of correctness.
+
+## Explore the documentation
+
+| Guide | What you will find |
+| --- | --- |
+| [Deployment](docs/DEPLOYMENT.md) | Frontend, API and hosting setup |
+| [Authentication & email](docs/AUTH_SETUP.md) | Google sign-in, Gmail authorization and reset emails |
+| [Architecture](docs/ARCHITECTURE.md) | Application structure and responsibilities |
+| [API reference](docs/API.md) | Backend routes and workflows |
+| [Review validation](docs/REVIEW_VALIDATION.md) | Tested analysis behavior and boundaries |
+| [Maintenance review](docs/MAINTENANCE_REVIEW.md) | Performance measurements, security work and remaining constraints |
 
 ## Quick start
 
