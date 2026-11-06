@@ -516,11 +516,11 @@ function Landing() {
             "Connect Gemini for contextual assistance. Review diffs and approve changes to an isolated snapshot.",
           ],
         ].map(([Icon, t, d]: any) => (
-          <article key={t}>
+          <motion.article key={t} initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true,amount:.15}} transition={{duration:.35}}>
             <Icon size={24} />
             <h3>{t}</h3>
             <p>{d}</p>
-          </article>
+          </motion.article>
         ))}
       </section>
       <footer>

@@ -2793,3 +2793,45 @@ body { min-width: 320px; }
   .breadcrumbs strong { max-width:100px; }
   .stat-grid { gap:10px; }
 }
+
+/* Refined indigo / teal identity with theme-specific surface depth. */
+:root { --accent:#b5b1ff; --brand-fill:#5750ce; --brand-end:#4144ac; --glow:rgba(101,94,225,.14); --surface-shadow:0 8px 28px #00000018; --teal:#68d7c3; }
+:root[data-theme="light"] { --accent:#5146b9; --brand-fill:#5750ce; --brand-end:#4144ac; --glow:rgba(101,94,225,.08); --surface-shadow:0 6px 24px #252b4c06; --teal:#147865; --muted:#59667d; }
+.button.primary { background:linear-gradient(125deg,var(--brand-fill),var(--brand-end)); color:#fff; border-color:#7771df; box-shadow:0 4px 12px #4542a51a,inset 0 1px 0 #ffffff20; }
+.button { border-radius:10px; transition:background-color .18s,border-color .18s,box-shadow .18s; }
+.button.primary:hover { box-shadow:0 8px 22px #4542a530,inset 0 1px 0 #ffffff30; filter:brightness(1.07); }
+.button:active { filter:brightness(.96); }
+.panel,.stat-card { border-radius:14px; box-shadow:var(--surface-shadow); }
+.stat-card { position:relative; overflow:hidden; background:linear-gradient(135deg,var(--panel),var(--panel-hover)); }
+.stat-card::before { content:''; position:absolute; top:0; left:20px; right:20px; height:2px; background:linear-gradient(90deg,var(--accent),transparent); opacity:.5; }
+.stat-card > strong { letter-spacing:-1.2px; font-variant-numeric:tabular-nums; }
+.sidebar .nav-group a { border-radius:10px; transition:background-color .18s,color .18s; }
+.sidebar .nav-group a.active { background:var(--soft); color:var(--accent); box-shadow:inset 3px 0 var(--accent); }
+.overview-banner,:root[data-theme="light"] .overview-banner { border-radius:16px; border-color:var(--border); background:radial-gradient(ellipse at 100% 0%,var(--glow),transparent 65%),linear-gradient(120deg,var(--panel-hover),var(--panel)); }
+.overview-banner h2,:root[data-theme="light"] .overview-banner h2 { color:var(--text); }
+.overview-banner p,:root[data-theme="light"] .overview-banner p { color:var(--muted); }
+.overview-banner a,:root[data-theme="light"] .overview-banner a { color:var(--accent); }
+.landing { position:relative; isolation:isolate; }
+.landing::before { content:''; position:absolute; z-index:-1; pointer-events:none; inset:80px 0 auto; height:650px; background:radial-gradient(ellipse at 30% 20%,var(--glow),transparent 55%),radial-gradient(ellipse at 85% 45%,#32bda10b,transparent 45%); }
+.landing > header { border-bottom-color:var(--border); }
+.landing-hero h1 { text-wrap:balance; }
+.landing-hero h1 span,:root[data-theme="light"] .landing-hero h1 span { background:linear-gradient(110deg,var(--accent) 20%,var(--teal)); background-clip:text; color:transparent; }
+.landing-hero > .badge { padding:9px 15px; border-color:var(--border); background:var(--panel); color:var(--accent); box-shadow:var(--surface-shadow); }
+.hero-note { color:var(--muted); }
+.landing-preview { border-radius:18px; border-color:var(--border); box-shadow:0 30px 80px #080c221a,0 0 0 7px var(--glow); }
+.preview-toolbar { min-height:52px; }
+.feature-grid { gap:20px; margin:72px 0; }
+.feature-grid article { padding:28px; border:1px solid var(--border); border-radius:16px; background:var(--panel); box-shadow:var(--surface-shadow); }
+.feature-grid article > svg { box-sizing:content-box; padding:12px; border-radius:12px; background:var(--soft); color:var(--accent); }
+.feature-grid h3 { font-size:17px; letter-spacing:-.3px; }
+.feature-grid p { font-size:14px; line-height:1.75; color:var(--muted); }
+.auth-card { border-radius:18px; border-color:var(--border); }
+input:focus,textarea:focus,select:focus { border-color:var(--accent); outline:2px solid var(--glow); outline-offset:2px; }
+:root[data-theme="light"] .error { color:#a51e3d; background:#fff0f3; border-color:#eab6c2; }
+@media(hover:hover) and (prefers-reduced-motion:no-preference) {
+ .feature-grid article { transition:border-color .2s,box-shadow .2s; }
+ .feature-grid article:hover { border-color:var(--accent); box-shadow:0 12px 32px var(--glow); }
+ .hero-buttons .button svg { transition:transform .2s; }
+ .hero-buttons .button:hover svg { transform:translateX(3px); }
+}
+@media(max-width:760px) { .feature-grid { margin:48px 0; } .feature-grid article { padding:24px; } .landing-preview { border-radius:12px; } }
