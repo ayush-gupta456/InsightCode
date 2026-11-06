@@ -41,6 +41,7 @@ export class Store {
         { strict: false, versionKey: false },
       );
       if (collection === "users") schema.index({ email: 1 }, { unique: true });
+      if (collection === "sessions") schema.index({ hash: 1 });
       this.models.set(
         collection,
         mongoose.models[collection] || mongoose.model(collection, schema),
@@ -72,6 +73,10 @@ export class Store {
         .lean()) || undefined) as EntityMap[K] | undefined;
     return structuredClone(this.data[collection]?.[id]) as
       EntityMap[K] | undefined;
+  }
+  async findOne<K extends keyof EntityMap>(collection: K, filter: Partial<EntityMap[K]>): Promise<EntityMap[K] | undefined> {
+    if(this.mongoUri) return (await this.model(collection).findOne(filter, {_id:0}).lean() || undefined) as EntityMap[K] | undefined;
+    return (await this.list(collection)).find(value => Object.entries(filter).every(([key,expected]) => (value as any)[key] === expected));
   }
   async put<K extends keyof EntityMap>(collection: K, value: EntityMap[K]) {
     if (this.mongoUri) {

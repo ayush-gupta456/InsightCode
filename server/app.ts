@@ -146,7 +146,7 @@ export async function createApp(store: Store, secret: string) {
   app.post("/api/auth/register", authLimit, async (req, res) => {
     const input = credentials.parse(req.body);
     await locked(`register:${input.email}`, async () => {
-    if ((await store.list("users")).some((u) => u.email === input.email))
+    if (await store.findOne("users", {email:input.email}))
       throw new HttpError(409, "This email is already registered");
     const user: User = {
       id: randomUUID(),
@@ -162,9 +162,7 @@ export async function createApp(store: Store, secret: string) {
   });
   app.post("/api/auth/login", authLimit, async (req, res) => {
     const input = credentials.parse(req.body);
-    const user = (await store.list("users")).find(
-      (u) => u.email === input.email,
-    );
+    const user = await store.findOne("users", {email:input.email});
     if (!user || !(await bcrypt.compare(input.password, user.passwordHash)))
       throw new HttpError(401, "Invalid email or password");
     res.json(await issueSession(user, res));
@@ -178,9 +176,7 @@ export async function createApp(store: Store, secret: string) {
   app.post("/api/auth/refresh", authLimit, async (req, res) => {
     const raw = refreshCookie(req);
     if (!raw) throw new HttpError(401, "Sign in to continue");
-    const session = (await store.list("sessions")).find(
-      (s) => s.hash === hashToken(raw),
-    );
+    const session = await store.findOne("sessions", {hash:hashToken(raw)});
     if (!session || Date.parse(session.expiresAt) < Date.now())
       throw new HttpError(401, "Session expired");
     if (!(await store.consume("sessions", session.id))) throw new HttpError(401, 'Session already used');
@@ -191,8 +187,7 @@ export async function createApp(store: Store, secret: string) {
   app.post("/api/auth/logout", async (req, res) => {
     const raw = refreshCookie(req);
     if (raw)
-      for (const s of await store.list("sessions"))
-        if (s.hash === hashToken(raw)) await store.remove("sessions", s.id);
+      { const session = await store.findOne("sessions", {hash:hashToken(raw)}); if(session) await store.remove("sessions",session.id); }
     res.clearCookie("refresh", cookieOptions).json({ ok: true });
   });
   app.use("/api", async (req, res, next) => {
@@ -827,7 +822,7 @@ export async function createApp(store: Store, secret: string) {
             ? "The request could not be completed"
             : error instanceof ZodError
               ? error.issues.map((i) => i.message).join("; ")
-              : error.message,
+              : error.code === 11000 ? "This record already exists" : error.message,
       });
   });
   for (const r of await store.list("reviews"))

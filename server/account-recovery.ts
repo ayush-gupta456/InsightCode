@@ -117,7 +117,7 @@ export function mountAccountRecovery(
         503,
         "Password recovery is not available yet. Please contact the workspace administrator",
       );
-    const user = (await store.list("users")).find((u) => u.email === email);
+    const user = await store.findOne("users", {email});
     if (user) {
       const raw = randomToken(),
         id = hashToken(raw);
@@ -261,11 +261,10 @@ export function mountAccountRecovery(
       )
         throw new Error("claims rejected");
       await locked("auth-accounts", async () => {
-        const users = await store.list("users");
-        let user = users.find((u) => u.googleId === payload.sub);
+        let user = await store.findOne("users", {googleId:payload.sub});
         if (!user) {
           const email = payload.email!.toString().toLowerCase();
-          if (users.some((u) => u.email === email))
+          if (await store.findOne("users", {email}))
             throw new HttpError(
               409,
               "Use your existing email and password to sign in",

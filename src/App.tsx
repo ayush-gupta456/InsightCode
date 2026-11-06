@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, lazy } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Link,
@@ -37,8 +37,6 @@ import {
   Code2,
   ArrowRight,
   Terminal,
-  Sun,
-  Moon,
   Eye,
   EyeOff,
 } from "lucide-react";
@@ -47,19 +45,17 @@ import { ThemeControl } from "./theme";
 import { Recovery } from "./recovery";
 import { api, post, refreshSession, useSession } from "./api";
 import { Badge, ErrorBox, Logo, Modal } from "./ui";
-import {
-  Dashboard,
-  Projects,
-  ReviewList,
-  Findings,
-  Analytics,
-  SettingsPage,
-  AssistantPage,
-  GitHubPage,
-  TeamPage,
-  UsagePage,
-  AdminPage,
-} from "./pages";
+const Dashboard = lazy(() => import("./pages").then(m => ({default: m.Dashboard})));
+const Projects = lazy(() => import("./pages").then(m => ({default: m.Projects})));
+const ReviewList = lazy(() => import("./pages").then(m => ({default: m.ReviewList})));
+const Findings = lazy(() => import("./pages").then(m => ({default: m.Findings})));
+const Analytics = lazy(() => import("./pages").then(m => ({default: m.Analytics})));
+const SettingsPage = lazy(() => import("./pages").then(m => ({default: m.SettingsPage})));
+const AssistantPage = lazy(() => import("./pages").then(m => ({default: m.AssistantPage})));
+const GitHubPage = lazy(() => import("./pages").then(m => ({default: m.GitHubPage})));
+const TeamPage = lazy(() => import("./pages").then(m => ({default: m.TeamPage})));
+const UsagePage = lazy(() => import("./pages").then(m => ({default: m.UsagePage})));
+const AdminPage = lazy(() => import("./pages").then(m => ({default: m.AdminPage})));
 const NewReview = lazy(() =>
   import("./review").then((m) => ({ default: m.NewReview })),
 );

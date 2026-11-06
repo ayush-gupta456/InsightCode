@@ -65,13 +65,14 @@ export function authTokens(secret: string) {
         .setIssuedAt()
         .setExpirationTime("15m")
         .sign(key),
-    claims: async (token: string) => (await jwtVerify(token,key,{issuer:'insightcode',audience:'insightcode-app',algorithms:['HS256']})).payload,
+    claims: async (token: string) => (await jwtVerify(token,key,{issuer:'insightcode',audience:'insightcode-app',algorithms:['HS256'],requiredClaims:['sub','exp','iat']})).payload,
     verify: async (token: string) =>
       (
         await jwtVerify(token, key, {
           issuer: "insightcode",
           audience: "insightcode-app",
           algorithms: ["HS256"],
+          requiredClaims: ["sub", "exp", "iat"],
         })
       ).payload.sub!,
   };

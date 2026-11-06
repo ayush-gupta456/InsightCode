@@ -2739,8 +2739,6 @@ button.danger:hover { background: #982338; }
 .auth-success { padding:18px; border:1px solid var(--border); background:var(--soft); border-radius:10px; line-height:1.7; }
 :root[data-theme="light"] .auth-page { background:radial-gradient(ellipse at top,#eee9fc,transparent 65%),var(--bg); }
 :root[data-theme="light"] .landing-hero h1 span { background:linear-gradient(110deg,#6850c3,#864baa); background-clip:text; color:transparent; }
-:root[data-theme="light"] .landing-window { background:var(--panel); }
-:root[data-theme="light"] .landing-window-bar { background:var(--panel-hover); }
 button:focus-visible,a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 @media(max-width:640px){.auth-topbar{align-items:flex-start;margin-bottom:28px;}.auth-topbar .logo{font-size:17px;}.auth-topbar .beta{display:none;}.theme-control button{padding:7px;}.theme-control button span:not(.theme-selected){display:none;}.landing header > div{flex-wrap:wrap;justify-content:flex-end;gap:12px;}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important;}}
