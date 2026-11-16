@@ -19,14 +19,12 @@ import {
   ShieldCheck,
   ChartNoAxesCombined,
   History,
-  Sparkles,
   Settings,
   Users,
   Search,
   Bell,
   PanelLeftClose,
   PanelLeftOpen,
-  Plus,
   ChevronDown,
   LogOut,
   Command,
@@ -34,11 +32,13 @@ import {
   Check,
   Code2,
   ArrowRight,
-  Terminal,
   Eye,
   EyeOff,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { AuthStory } from "./auth-story";
+import { AnimatedIcon } from "./motion-ui";
+const Landing = lazy(() => import("./Landing"));
 import { AppErrorBoundary, ErrorScreen, LoadingScreen } from "./status";
 import { ThemeControl } from "./theme";
 import { Recovery } from "./recovery";
@@ -203,8 +203,8 @@ function Shell() {
             <div className="nav-group" key={group.label}>
               <span className="nav-label">{group.label}</span>
               {group.items.map(([label, path, Icon]) => (
-                <NavLink title={label} key={path} end to={path}>
-                  <Icon size={18} />
+                <NavLink title={label} aria-label={label} key={path} end to={path}>
+                  <AnimatedIcon icon={Icon} size={18} />
                   <span className="nav-copy">{label}</span>
                   {label === "New review" && (
                     <span className="nav-hint">+</span>
@@ -259,7 +259,7 @@ function Shell() {
             <button className="search-trigger" aria-label="Find pages and reviews" onClick={() => setCommand(true)}>
               <Search size={15} />
               <span>Find pages and reviews</span>
-              <kbd>? K</kbd>
+              <kbd>Ctrl K</kbd>
             </button>
             <ThemeControl />
             <button
@@ -396,137 +396,6 @@ function Shell() {
     </div>
   );
 }
-function Landing() {
-  return (
-    <div className="landing">
-      <header>
-        <Link to="/">
-          <Logo />
-        </Link>
-        <nav className="landing-nav" aria-label="Main navigation">
-          <a href="#workflow">How it works</a>
-          <ThemeControl />
-          <Link to="/login">Sign in</Link>
-          <Link className="button primary" to="/register">
-            Open your workspace <ArrowUpRight size={16} />
-          </Link>
-        </nav>
-      </header>
-      <motion.section
-        className="landing-hero"
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <Badge tone="violet">
-          <Sparkles size={13} /> A clearer view of your code
-        </Badge>
-        <h1>
-          Ship with confidence.
-          <br />
-          <span>Understand every change.</span>
-        </h1>
-        <p>
-          Bring your code into focus with evidence-based reviews,
-          repository insights, and an AI assistant that knows the context.
-        </p>
-        <div className="hero-buttons">
-          <Link className="button primary" to="/register">
-            Start your first review <ArrowRight size={17} />
-          </Link>
-          <a className="button" href="#workflow">
-            Explore the workflow
-          </a>
-        </div>
-        <ul className="hero-note" aria-label="Review safeguards">
-          <li><ShieldCheck size={15} aria-hidden="true"/>Private reviews</li>
-          <li><Check size={15} aria-hidden="true"/>Approval before changes</li>
-          <li><Code2 size={15} aria-hidden="true"/>Explicit GitHub publishing</li>
-        </ul>
-      </motion.section>
-      <div className="landing-preview">
-        <div className="preview-toolbar">
-          <span className="window-dots" aria-hidden="true"><i/><i/><i/></span>
-          <span>insightcode / your next great idea</span>
-          <Badge tone="green">Ready to review</Badge>
-        </div>
-        <div className="preview-body">
-          <div>
-            <Terminal size={21} />
-            <h3>From source to understanding.</h3>
-            <pre>
-              <span className="code-purple">const</span> review ={" "}
-              <span className="code-purple">await</span> insight.analyze({"{"}
-              <br /> source:{" "}
-              <span className="code-green">'your-repository'</span>,<br />{" "}
-              context: <span className="code-green">'what matters'</span>,<br />{" "}
-              confidence:{" "}
-              <span className="code-green">'backed by evidence'</span>
-              <br />
-              {"}"});
-            </pre>
-          </div>
-          <div className="preview-insight">
-            <span className="eyebrow">THE REVIEW WORKFLOW</span>
-            {[
-              ["01", "Inspect", "Explore files, symbols, and dependencies."],
-              [
-                "02",
-                "Understand",
-                "Find issues with source evidence and context.",
-              ],
-              [
-                "03",
-                "Improve",
-                "Preview a patch. Approve it. Review the results.",
-              ],
-            ].map(([n, t, d]) => (
-              <div key={n}>
-                <span>{n}</span>
-                <section>
-                  <strong>{t}</strong>
-                  <p>{d}</p>
-                </section>
-                <Check size={16} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <section id="workflow" className="feature-grid">
-        {[
-          [
-            ScanLine,
-            "Start with your code",
-            "Paste a snippet, upload source files or a ZIP, or import a public GitHub repository.",
-          ],
-          [
-            ShieldCheck,
-            "Evidence comes first",
-            "Inspect the exact lines behind each finding. Security hotspots are clearly distinguished from verified issues.",
-          ],
-          [
-            Sparkles,
-            "Keep the final say",
-            "Connect Gemini for contextual assistance. Review diffs and approve changes to an isolated snapshot.",
-          ],
-        ].map(([Icon, t, d]: any) => (
-          <motion.article key={t} initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true,amount:.15}} transition={{duration:.35}}>
-            <Icon size={24} />
-            <h3>{t}</h3>
-            <p>{d}</p>
-          </motion.article>
-        ))}
-      </section>
-      <footer>
-        <Logo />
-        <span>Thoughtful reviews. Better software.</span>
-        <Link to="/register">
-          Get started <ArrowUpRight size={14} />
-        </Link>
-      </footer>
-    </div>
-  );
-}
 function Auth({ register = false }: { register?: boolean }) {
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
@@ -537,11 +406,11 @@ function Auth({ register = false }: { register?: boolean }) {
   const callbackError = new URLSearchParams(location.search).get('error');
   if (user) return <Navigate to="/app" replace />;
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-redesigned">
       <div className="auth-topbar"><Link className="auth-logo" to="/">
         <Logo />
       </Link><ThemeControl /></div>
-      <motion.div className="auth-card" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>
+      <div className="auth-layout"><AuthStory/><motion.div className="auth-card" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:.2}}>
         <div className="empty-icon">
           <Command size={26} />
         </div>
@@ -553,7 +422,7 @@ function Auth({ register = false }: { register?: boolean }) {
             ? "Create your private InsightCode workspace."
             : "Pick up where your last review left off."}
         </p>
-        {authConfig.data?.google ? <a className="button google-signin" href="/api/auth/google/start">Continue with Google</a> : <button className="google-signin" disabled title="Google sign-in is not configured yet">Continue with Google � coming soon</button>}
+        {authConfig.data?.google ? <a className="button google-signin" href="/api/auth/google/start">Continue with Google</a> : <button className="google-signin" disabled title="Google sign-in is not configured yet">Google sign-in unavailable</button>}
         <div className="auth-divider"><span>or continue with email</span></div>
         {callbackError && <ErrorBox error={callbackError === 'existing-account' ? 'An account already uses this email. Sign in with your password or use password recovery.' : 'Google sign-in was cancelled or could not be completed. Please try again.'} />}
         <form
@@ -628,7 +497,7 @@ function Auth({ register = false }: { register?: boolean }) {
           <ErrorBox error={error} />
           <button className="primary" disabled={busy}>
             {busy
-              ? "Opening workspace."
+              ? "Opening workspace…"
               : register
                 ? "Create workspace"
                 : "Sign in"}
@@ -641,7 +510,7 @@ function Auth({ register = false }: { register?: boolean }) {
             {register ? "Sign in" : "Create a workspace"}
           </Link>
         </p>
-      </motion.div>
+      </motion.div></div>
       <div className="auth-foot">
         <ShieldCheck size={15} /> Your source stays in your workspace unless you
         enable AI analysis.

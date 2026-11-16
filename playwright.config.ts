@@ -7,7 +7,9 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:5173",
-    channel: "chrome",
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? { launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } }
+      : { channel: "chrome" }),
     headless: true,
     trace: "retain-on-failure",
   },

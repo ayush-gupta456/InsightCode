@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
 import { post } from "./api";
 import { ErrorBox, Logo } from "./ui";
+import { AuthStory } from "./auth-story";
 import { ThemeControl } from "./theme";
 export function Recovery() {
   const [params] = useSearchParams();
@@ -18,14 +19,14 @@ export function Recovery() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<unknown>();
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-redesigned">
       <div className="auth-topbar">
         <Link to="/">
           <Logo />
         </Link>
         <ThemeControl />
       </div>
-      <motion.div
+      <div className="auth-layout"><AuthStory/><motion.div
         className="auth-card"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -129,7 +130,7 @@ export function Recovery() {
           <ArrowLeft size={15} />
           Back to sign in
         </Link>
-      </motion.div>
+      </motion.div></div>
     </div>
   );
 }

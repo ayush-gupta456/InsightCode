@@ -8,7 +8,7 @@ test('public themes persist and recovery works on mobile with reduced motion',as
   await expect(page.locator('html')).toHaveAttribute('data-theme','light');
   await page.getByRole('link',{name:'Sign in',exact:true}).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme','light');
-  await expect(page.getByRole('button',{name:/Continue with Google/})).toBeDisabled();
+  await expect(page.getByRole('button',{name:/Google sign-in unavailable/})).toBeDisabled();
   await page.screenshot({path:'test-results/signin-light.png',fullPage:true});
   await page.getByRole('button',{name:'Dark theme',exact:true}).click();
   await page.reload({waitUntil:'domcontentloaded'});

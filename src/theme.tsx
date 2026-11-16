@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { create } from "zustand";
 import { Sun, Moon } from "lucide-react";
 import { motion } from "motion/react";
@@ -19,6 +20,7 @@ export const useTheme = create<{
 }));
 export function ThemeControl() {
   const { theme, setTheme } = useTheme();
+  const selectionId = useId();
   return (
     <div className="theme-control" role="group" aria-label="Color theme">
       {(["light", "dark"] as const).map((value) => (
@@ -32,7 +34,7 @@ export function ThemeControl() {
           {theme === value && (
             <motion.span
               className="theme-selected"
-              layoutId="theme-selection"
+              layoutId={`theme-selection-${selectionId}`}
               transition={{ type: "spring", bounce: 0, duration: 0.2 }}
             />
           )}

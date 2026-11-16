@@ -1,5 +1,6 @@
+import { AnimatedIcon } from "./motion-ui";
 import { LoadingScreen } from "./status";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, ArrowUpRight, Code2 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -8,7 +9,7 @@ export function Logo() {
   return (
     <span className="logo">
       <span className="logo-mark">
-        <Code2 size={22} />
+        <AnimatedIcon icon={Code2} size={22} />
       </span>
       Insight<span className="logo-light">Code</span>
       <span className="beta">BETA</span>
@@ -60,7 +61,7 @@ export function Empty({
   return (
     <div className="empty">
       <div className="empty-icon">
-        <Code2 size={26} />
+        <AnimatedIcon icon={Code2} size={26} />
       </div>
       <h3>{title}</h3>
       <p>{children}</p>
@@ -96,11 +97,15 @@ export function Modal({
   children: ReactNode;
   className?: string;
 }) {
+  const returnFocus = useRef<HTMLElement | null>(null);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="overlay" />
-        <Dialog.Content asChild><motion.div className={`modal ${className}`} initial={{opacity:0}} animate={{opacity:1}} transition={{duration:.18,ease:'easeOut'}}>
+        <Dialog.Content asChild
+          onOpenAutoFocus={() => { returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; }}
+          onCloseAutoFocus={event => { if (returnFocus.current?.isConnected) { event.preventDefault(); returnFocus.current.focus(); } }}
+        ><motion.div className={`modal ${className}`} initial={{opacity:0}} animate={{opacity:1}} transition={{duration:.18,ease:'easeOut'}}>
           <div className="section-heading">
             <Dialog.Title>{title}</Dialog.Title>
             <Dialog.Close className="icon-button" aria-label="Close dialog">
