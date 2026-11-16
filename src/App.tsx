@@ -19,11 +19,9 @@ import {
   ShieldCheck,
   ChartNoAxesCombined,
   History,
-  GitPullRequest,
   Sparkles,
   Settings,
   Users,
-  CreditCard,
   Search,
   Bell,
   PanelLeftClose,
@@ -76,8 +74,6 @@ const nav: { label: string; items: [string, string, LucideIcon][] }[] = [
     label: "Intelligence",
     items: [
       ["Findings", "/app/findings", Code2],
-      ["AI assistant", "/app/assistant", Sparkles],
-      ["Security center", "/app/security", ShieldCheck],
       ["Quality analytics", "/app/analytics", ChartNoAxesCombined],
     ],
   },
@@ -85,7 +81,6 @@ const nav: { label: string; items: [string, string, LucideIcon][] }[] = [
     label: "Workspace",
     items: [
       ["Review history", "/app/history", History],
-      ["Pull requests", "/app/pulls", GitPullRequest],
       ["Team members", "/app/team", Users],
       ["Settings", "/app/settings", Settings],
     ],
@@ -108,7 +103,7 @@ export default function App() {
         <Route path="new" element={<NewReview />} />
         <Route path="reviews/:id" element={<ReviewWorkspace />} />
         <Route path="findings" element={<Findings />} />
-        <Route path="security" element={<Findings security />} />
+        <Route path="security" element={<Navigate to="/app/findings?category=security" replace />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="history" element={<ReviewList />} />
         <Route path="assistant" element={<AssistantPage />} />
@@ -138,6 +133,7 @@ function Shell() {
   const [search, setSearch] = useState("");
   const [notifications, setNotifications] = useState(false);
   const [profile, setProfile] = useState(false);
+  const [actionError, setActionError] = useState<unknown>();
   const client = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -150,7 +146,7 @@ function Shell() {
     queryKey: ["notifications"],
     queryFn: () => api<any[]>("/notifications"),
     enabled: !!user,
-    refetchInterval: 30_000,
+    refetchInterval: 120_000,
   });
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -178,7 +174,7 @@ function Shell() {
       socket.close();
     };
   }, [token, client]);
-  if (!ready) return <div className="boot">Opening your workspace…</div>;
+  if (!ready) return <div className="boot">Opening your workspace.</div>;
   if (!user) return <Navigate to="/login" replace />;
   const current =
     nav
@@ -188,6 +184,7 @@ function Shell() {
   const unread = notes.data?.filter((n) => !n.read).length || 0;
   return (
     <div className={`app-shell ${collapsed ? "collapsed" : ""}`}>
+      <a className="skip-link" href="#workspace-content">Skip to content</a>
       <aside className="sidebar">
         <Link to="/app">
           <Logo />
@@ -203,7 +200,7 @@ function Shell() {
           </span>
           <ChevronDown size={14} />
         </button>
-        <nav>
+        <nav aria-label="Main navigation">
           {nav.map((group) => (
             <div className="nav-group" key={group.label}>
               <span className="nav-label">{group.label}</span>
@@ -223,7 +220,7 @@ function Shell() {
           <div className="local-card">
             <span className="status-dot" /> Your code, your workspace
             <p>
-              Reviews stay private.
+              Reviews follow your project permissions.
               <br />
               You control what happens next.
             </p>
@@ -247,6 +244,7 @@ function Shell() {
             <button
               className="icon-button"
               aria-label="Toggle sidebar"
+              aria-expanded={matchMedia("(max-width: 760px)").matches ? mobileMenu : !collapsed}
               onClick={() => matchMedia('(max-width: 760px)').matches ? setMobileMenu(true) : setCollapsed(!collapsed)}
             >
               {collapsed ? (
@@ -260,10 +258,10 @@ function Shell() {
             <strong>{current}</strong>
           </div>
           <div className="top-actions">
-            <button className="search-trigger" aria-label="Search workspace" onClick={() => setCommand(true)}>
+            <button className="search-trigger" aria-label="Find pages and reviews" onClick={() => setCommand(true)}>
               <Search size={15} />
-              <span>Search anything…</span>
-              <kbd>⌘ K</kbd>
+              <span>Find pages and reviews</span>
+              <kbd>? K</kbd>
             </button>
             <ThemeControl />
             <button
@@ -277,8 +275,8 @@ function Shell() {
             <span className="avatar small">{user.name[0].toUpperCase()}</span>
           </div>
         </header>
-        <main className="page">
-          <Outlet />
+        <main className="page" id="workspace-content" tabIndex={-1}>
+          <motion.div key={location.pathname} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} transition={{duration:.18,ease:"easeOut"}}><Outlet /></motion.div>
         </main>
         <footer className="app-footer">
           <span>
@@ -301,12 +299,15 @@ function Shell() {
         description="Find a page or review. Ctrl+K opens this search."
       >
         <input
+          aria-label="Search pages and reviews"
           autoFocus
-          placeholder="Search reviews and pages…"
+          placeholder="Search reviews and pages."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <ErrorBox error={reviews.error} />
         <div className="command-results">
+          {!reviews.isLoading && !reviews.error && search.trim() && !nav.flatMap(n=>n.items).some(([label])=>label.toLowerCase().includes(search.toLowerCase())) && !reviews.data?.some(r=>r.name.toLowerCase().includes(search.toLowerCase())) && <p role="status" className="muted">No matching pages or reviews.</p>}
           {nav
             .flatMap((n) => n.items)
             .filter(([label]) =>
@@ -339,7 +340,7 @@ function Shell() {
         onOpenChange={setNotifications}
         title="Notifications"
       >
-        <ErrorBox error={notes.error} />
+        <ErrorBox error={notes.error || actionError} />
         {!notes.data?.length ? (
           <p className="muted">Your review updates will appear here.</p>
         ) : (
@@ -359,8 +360,8 @@ function Shell() {
         {unread > 0 && (
           <button
             onClick={async () => {
-              await post("/notifications/read");
-              void client.invalidateQueries({ queryKey: ["notifications"] });
+              try { setActionError(undefined); await post("/notifications/read");
+              void client.invalidateQueries({ queryKey: ["notifications"] }); } catch(error) { setActionError(error); }
             }}
           >
             Mark all read
@@ -441,13 +442,12 @@ function Landing() {
         </div>
         <div className="hero-note">
           <ShieldCheck size={15} />
-          Private reviews <span>·</span>Approval before changes <span>·</span>No
-          remote writes
+          Private reviews <span>�</span>Approval before changes <span>�</span>Explicit GitHub publishing
         </div>
       </motion.section>
       <div className="landing-preview">
         <div className="preview-toolbar">
-          <span className="window-dots">● ● ●</span>
+          <span className="window-dots">? ? ?</span>
           <span>insightcode / your next great idea</span>
           <Badge tone="green">Ready to review</Badge>
         </div>
@@ -555,7 +555,7 @@ function Auth({ register = false }: { register?: boolean }) {
             ? "Create your private InsightCode workspace."
             : "Pick up where your last review left off."}
         </p>
-        {authConfig.data?.google ? <a className="button google-signin" href="/api/auth/google/start">Continue with Google</a> : <button className="google-signin" disabled title="Google sign-in is not configured yet">Continue with Google · coming soon</button>}
+        {authConfig.data?.google ? <a className="button google-signin" href="/api/auth/google/start">Continue with Google</a> : <button className="google-signin" disabled title="Google sign-in is not configured yet">Continue with Google � coming soon</button>}
         <div className="auth-divider"><span>or continue with email</span></div>
         {callbackError && <ErrorBox error={callbackError === 'existing-account' ? 'An account already uses this email. Sign in with your password or use password recovery.' : 'Google sign-in was cancelled or could not be completed. Please try again.'} />}
         <form
@@ -630,7 +630,7 @@ function Auth({ register = false }: { register?: boolean }) {
           <ErrorBox error={error} />
           <button className="primary" disabled={busy}>
             {busy
-              ? "Opening workspace…"
+              ? "Opening workspace."
               : register
                 ? "Create workspace"
                 : "Sign in"}

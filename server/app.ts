@@ -41,6 +41,10 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 const now = () => new Date().toISOString();
 export async function createApp(store: Store, secret: string) {
   const app = express();
+  // Trust only explicitly listed proxy addresses/subnets, never arbitrary forwarded IPs.
+  const trustedProxies = process.env.TRUSTED_PROXY_CIDRS?.split(',').map(value=>value.trim()).filter(Boolean);
+  if (trustedProxies?.some(value=>value==='true' || /^\d+$/.test(value))) throw new Error('TRUSTED_PROXY_CIDRS must contain proxy addresses or CIDRs, not a boolean or hop count');
+  if (trustedProxies?.length) app.set('trust proxy', trustedProxies);
   const tokens = authTokens(secret);
   const locked = createLocks();
   const context = new AsyncLocalStorage<{readOnly:boolean}>();
@@ -58,6 +62,26 @@ export async function createApp(store: Store, secret: string) {
       credentials: true,
     }),
   );
+  type WebhookJob = {delivery:string;eventType:string;event:{action?:string;number?:number;repository?:{name:string;owner:{login:string}}}};
+  let enqueueWebhook = async (_job:WebhookJob):Promise<void> => { throw new HttpError(503,'Automatic re-review requires the durable Redis queue'); };
+  async function processWebhook({delivery,event,eventType}:WebhookJob) {
+    await locked(`webhook:${delivery}`,async()=>{
+      if(await store.get('deliveries',delivery)) return;
+      if(eventType==='pull_request' && ['opened','reopened','synchronize'].includes(event.action || '') && event.repository && event.number) {
+        for(const subscription of await store.list('subscriptions')) {
+          if(subscription.owner!==event.repository.owner.login || subscription.repo!==event.repository.name || subscription.pull!==event.number) continue;
+          const checkpoint=delivery+':'+subscription.id;
+          if(await store.get('deliveries',checkpoint)) continue;
+          const token=await githubToken(store,subscription.ownerId);
+          if(!token) continue;
+          const source=await repositoryFiles(subscription.owner,subscription.repo,'HEAD',token,subscription.pull);
+          await submit(subscription.ownerId,{name:`${subscription.owner}/${subscription.repo} #${subscription.pull}`,files:source.files,ai:subscription.ai,projectId:subscription.projectId,source:'pull-request',github:{owner:subscription.owner,repo:subscription.repo,pull:subscription.pull,ref:source.commit}});
+          await store.put('deliveries',{id:checkpoint,ownerId:'system',createdAt:now()});
+        }
+      }
+      await store.put('deliveries',{id:delivery,ownerId:'system',createdAt:now()});
+    });
+  }
   app.post(
     "/api/github/webhook",
     express.raw({ type: "application/json", limit: "1mb" }),
@@ -74,19 +98,8 @@ export async function createApp(store: Store, secret: string) {
         throw new HttpError(401, "Invalid webhook signature");
       const delivery = z.string().uuid().parse(req.headers['x-github-delivery']);
       const event = z.object({action:z.string().optional(),number:z.number().int().positive().optional(),repository:z.object({name:z.string(),owner:z.object({login:z.string()})}).optional()}).parse(JSON.parse(req.body.toString('utf8')));
-      await locked(`webhook:${delivery}`, async () => {
-        if (await store.get('deliveries',delivery)) { res.status(202).json({received:true,duplicate:true}); return; }
-        let count=0;
-        if(req.headers['x-github-event']==='pull_request' && ['opened','reopened','synchronize'].includes(event.action || '') && event.repository && event.number) {
-          for(const subscription of await store.list('subscriptions')) {
-            if(subscription.owner!==event.repository.owner.login || subscription.repo!==event.repository.name || subscription.pull!==event.number) continue;
-            const token=await githubToken(store,subscription.ownerId); if(!token)continue;
-            const source=await repositoryFiles(subscription.owner,subscription.repo,'HEAD',token,subscription.pull);
-            await submit(subscription.ownerId,{name:`${subscription.owner}/${subscription.repo} #${subscription.pull}`,files:source.files,ai:subscription.ai,projectId:subscription.projectId,source:'pull-request',github:{owner:subscription.owner,repo:subscription.repo,pull:subscription.pull,ref:source.commit}}); count++;
-          }
-        }
-        await store.put('deliveries',{id:delivery,ownerId:'system',createdAt:now()});res.status(202).json({received:true,reviewsQueued:count});
-      });
+      await enqueueWebhook({delivery,event,eventType:String(req.headers['x-github-event'] || '')});
+      res.status(202).json({received:true});
     },
   );
   app.use(express.json({ limit: "3mb" }));
@@ -270,7 +283,7 @@ export async function createApp(store: Store, secret: string) {
         : "Local development store",
       queue: process.env.REDIS_URL ? "BullMQ" : "Local background jobs",
       analyzers: ["InsightCode rules", "TypeScript AST", ...configuredAnalyzers()],
-      externalAnalyzers: process.env.ANALYZER_IMAGE ? 'Docker worker configured' : 'Not configured',
+      externalAnalyzers: process.env.ANALYZER_IMAGE ? 'Docker image configured; execution availability not verified' : 'Not configured',
       isolatedTests: !!process.env.ANALYZER_IMAGE,
       billing: false,
       team: true,
@@ -352,7 +365,6 @@ export async function createApp(store: Store, secret: string) {
       review.logs.push(
         "Review complete. Security hotspots require human confirmation.",
       );
-      await saveReview(review);
       await store.put("notifications", {
         id: randomUUID(),
         ownerId: review.ownerId,
@@ -361,6 +373,8 @@ export async function createApp(store: Store, secret: string) {
         read: false,
         createdAt: now(),
       });
+      // Notify clients only after the notification is available to refetch.
+      await saveReview(review);
     } catch {
       review.status = "failed";
       review.error = "Analysis failed. Please retry with a smaller source set.";
@@ -384,9 +398,10 @@ export async function createApp(store: Store, secret: string) {
     const queue = new Queue("insightcode-reviews", { connection });
     const worker = new Worker(
       "insightcode-reviews",
-      async (job) => processReview(job.data.id),
+      async (job) => job.name === "webhook" ? processWebhook(job.data) : processReview(job.data.id),
       { connection, concurrency: 2 },
     );
+    enqueueWebhook = async (job) => { await queue.add('webhook',job,{jobId:'webhook-'+job.delivery,attempts:5,backoff:{type:'exponential',delay:5000},removeOnComplete:1000,removeOnFail:1000}); };
     enqueue = async (id) => {
       await queue.add(
         "review",
@@ -787,6 +802,7 @@ export async function createApp(store: Store, secret: string) {
   app.post('/api/reviews/:id/github/subscribe',async(req,res)=>{
     z.object({approved:z.literal(true)}).parse(req.body);const review=await owned('reviews',String(req.params.id),res.locals.userId);
     if(!review.github?.pull)throw new HttpError(400,'Select a pull request review');if(!process.env.GITHUB_WEBHOOK_SECRET)throw new HttpError(503,'Configure the GitHub webhook first');
+    if(!process.env.REDIS_URL)throw new HttpError(503,'Automatic re-review requires the durable Redis queue');
     if(!await githubToken(store,res.locals.userId))throw new HttpError(409,'Connect GitHub first');
     const id=hashToken(`${review.ownerId}:${review.github.owner}/${review.github.repo}#${review.github.pull}`);
     await store.put('subscriptions',{id,ownerId:review.ownerId,...review.github,pull:review.github.pull,ai:review.ai,projectId:review.projectId,createdAt:now()});res.json({enabled:true});

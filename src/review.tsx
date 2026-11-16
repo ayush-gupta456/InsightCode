@@ -171,6 +171,7 @@ export function NewReview() {
                 <GitBranch size={26} />
               </div>
               <h2>Review a GitHub repository</h2>
+              <Link className="button" to="/app/pulls"><GitPullRequest size={16}/>Choose a pull request instead</Link>
               <ConnectedRepositories onSelect={(owner,repo,branch)=>{setOwner(owner);setRepo(repo);setBranch(branch);}}/>
               <p className="muted">
                 Imports up to 200 source files, with a 2 MB source limit.
@@ -209,7 +210,7 @@ export function NewReview() {
                   }
                 }}
               >
-                {loadingBranches ? "Loading…" : "Load branches"}
+                {loadingBranches ? "Loading." : "Load branches"}
               </button>
               <label>
                 Branch or commit
@@ -245,8 +246,8 @@ export function NewReview() {
                 </strong>
                 <span>
                   {mode === "zip"
-                    ? "5 MB compressed · 2 MB expanded · 200 source files"
-                    : "Up to 200 text files · 250 KB each · 2 MB total"}
+                    ? "5 MB compressed � 2 MB expanded � 200 source files"
+                    : "Up to 200 text files � 250 KB each � 2 MB total"}
                 </span>
                 <input
                   type="file"
@@ -377,7 +378,7 @@ export function NewReview() {
               ) : (
                 <ScanIcon />
               )}
-              {submit.isPending ? "Preparing review…" : "Start review"}
+              {submit.isPending ? "Preparing review." : "Start review"}
               <ArrowRight size={16} />
             </button>
           </section>
@@ -498,7 +499,7 @@ export function ReviewWorkspace() {
         <div>
           <h1>{r.name}</h1>
           <p>
-            {r.files.length} files · {r.source} · Revision {r.revision}
+            {r.files.length} files � {r.source} � Revision {r.revision}
           </p>
         </div>
         <Badge tone={r.status === "completed" ? "green" : "violet"}>
@@ -532,7 +533,7 @@ export function ReviewWorkspace() {
               aria-label="Search files"
               value={fileSearch}
               onChange={(e) => setFileSearch(e.target.value)}
-              placeholder="Find a file…"
+              placeholder="Find a file."
             />
           </div>
           <div className="file-list">
@@ -587,7 +588,7 @@ export function ReviewWorkspace() {
             />
           </div>
           <div className="editor-status">
-            <span>{current.content.split("\n").length} lines · UTF-8</span>
+            <span>{current.content.split("\n").length} lines � UTF-8</span>
             {edit !== null ? (
               <button
                 className="primary small-button"
@@ -631,10 +632,10 @@ export function ReviewWorkspace() {
               <div className="findings-summary">
                 <div>
                   <strong>
-                    {r.score ?? "—"}
+                    {r.score ?? "-"}
                     <small>/100</small>
                   </strong>
-                  <span>Finding-based score · not correctness</span>
+                  <span>Finding-based score � not correctness</span>
                 </div>
                 <select
                   aria-label="Filter severity"
@@ -719,7 +720,7 @@ export function ReviewWorkspace() {
                           </button>
                         </div>
                         <small className="muted">
-                          {f.engine} · Source evidence at line {f.startLine}
+                          {f.engine} � Source evidence at line {f.startLine}
                         </small>
                       </div>
                     )}
@@ -907,7 +908,7 @@ function Chat({ reviewId, assessment }: { reviewId: string; assessment?: string 
         {mutation.isPending && (
           <div className="message">
             <LoaderCircle className="spin" size={15} />
-            Thinking with your source context…
+            Thinking with your source context.
           </div>
         )}
         <ErrorBox error={q.error || mutation.error} />
@@ -924,7 +925,7 @@ function Chat({ reviewId, assessment }: { reviewId: string; assessment?: string 
           value={content}
           maxLength={4000}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Ask about this code…"
+          placeholder="Ask about this code."
         />
         <button
           className="primary icon-button"

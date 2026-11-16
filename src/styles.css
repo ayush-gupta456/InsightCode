@@ -2833,3 +2833,15 @@ input:focus,textarea:focus,select:focus { border-color:var(--accent); outline:2p
  .hero-buttons .button:hover svg { transform:translateX(3px); }
 }
 @media(max-width:760px) { .feature-grid { margin:48px 0; } .feature-grid article { padding:24px; } .landing-preview { border-radius:12px; } }
+
+/* Workspace interaction refinements: shared across both themes. */
+.skip-link { position:fixed;top:8px;left:8px;z-index:1000;padding:12px 18px;background:var(--panel);color:var(--text);border:2px solid var(--accent);border-radius:8px;transform:translateY(-160%); }
+.skip-link:focus { transform:translateY(0); }
+:where(button,a,input,select,textarea):focus-visible { outline:2px solid var(--accent);outline-offset:3px; }
+.command-results { max-height:min(55vh,480px);overflow-y:auto;overscroll-behavior:contain; }
+.page-title h1 { text-wrap:balance;letter-spacing:-.035em; }
+.page-title p { max-width:70ch;line-height:1.65; }
+.sidebar nav a { min-height:44px; }
+.sidebar nav a[aria-current="page"] { box-shadow:inset 3px 0 var(--accent); }
+@media (max-width:760px) { .icon-button,.toolbar select { min-height:44px;min-width:44px; } .toolbar { flex-wrap:wrap; } }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important;animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important; } }
