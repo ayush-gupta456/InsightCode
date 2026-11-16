@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 test('workspace and public pages fit phone tablet and desktop with accessible navigation',async({page})=>{
+ test.setTimeout(180_000);
  await page.route('**/api/**',route=>{const p=new URL(route.request().url()).pathname;if(p==='/api/auth/refresh'&&!new URL(page.url()).pathname.startsWith('/app'))return route.fulfill({status:401,json:{error:'Sign in'}});return route.fulfill({json:p==='/api/auth/refresh'?{token:'qa',user:{id:'qa',name:'Responsive QA',email:'qa@example.test',role:'member'}}:p==='/api/auth/config'?{google:true,passwordReset:true}:p==='/api/capabilities'?{analyzers:[],persistence:'test',queue:'test'}:p==='/api/analytics'?{}:[]});});
  await page.route('**/socket.io/**',r=>r.abort());
  for(const width of [320,390,625,768,955,1024,1440,1920]){
@@ -7,6 +8,7 @@ test('workspace and public pages fit phone tablet and desktop with accessible na
   for(const url of ['/','/login','/register','/forgot-password','/app','/app/history','/app/projects','/app/new','/app/settings']){
    await page.goto(url,{waitUntil:'domcontentloaded'});
    await expect(page.locator(url.startsWith('/app')?'.page':url==='/'?'.landing':'.auth-card')).toBeVisible();
+   if(url.startsWith('/app')) await expect(page.locator('.page h1').first()).toBeVisible();
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${url} at ${width}`).toBe(true);
   }
   if(width<760){

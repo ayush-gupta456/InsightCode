@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import {
+  Code2,
   ArrowRight,
   ArrowUpRight,
   Plus,
@@ -33,6 +34,7 @@ import {
 import { api, post, useSession } from "./api";
 import { Badge, Empty, ErrorBox, Loading, Modal, PageTitle, date } from "./ui";
 import type { Review, Project, Finding } from "../shared/types";
+import { AnimatedIcon } from "./motion-ui";
 import { GitHubConnection } from './integrations';
 import TeamManagement from './team';
 
@@ -69,34 +71,10 @@ export function Dashboard() {
           </Link>
         }
       />
-      <div className="overview-banner">
-        <div className="banner-icon">
-          <Sparkles size={25} />
-        </div>
-        <div>
-          <Badge tone="violet">YOUR WORKSPACE</Badge>
-          <h2>Better code starts with a second look.</h2>
-          <p>
-            Find the risks, understand the context, and make your next change
-            with confidence.
-          </p>
-          <Link to="/app/new">
-            Review your code <ArrowRight size={16} />
-          </Link>
-        </div>
-        <div className="code-orbit" aria-hidden="true">
-          <div>{"{ }"}</div>
-          <span className="orbit-dot one">
-            <ShieldCheck size={19} />
-          </span>
-          <span className="orbit-dot two">
-            <GitBranch size={19} />
-          </span>
-          <span className="orbit-dot three">
-            <Check size={19} />
-          </span>
-        </div>
-      </div>
+      <section className="workspace-overview" aria-label="Review workflow">
+        <div><span className="eyebrow">FROM SOURCE TO DECISION</span><h2>Your next change starts here.</h2><p>Keep your code, findings, and next steps in focus.</p></div>
+        <ol>{[{icon:Code2,label:"Import"},{icon:ScanLine,label:"Understand"},{icon:ShieldCheck,label:"Approve"}].map(({icon,label},i)=><li key={label}><AnimatedIcon icon={icon} size={19}/><span><small>0{i+1}</small>{label}</span></li>)}</ol>
+      </section>
       <ErrorBox error={analytics.error} />
       <div className="stat-grid">
         {[
@@ -132,7 +110,7 @@ export function Dashboard() {
           <article className="stat-card" key={label}>
             <div>
               <span>{label}</span>
-              <Icon className={`ink-${tone}`} size={18} />
+              <AnimatedIcon icon={Icon} className={`ink-${tone}`} size={20} />
             </div>
             <strong>{value}</strong>
             <p>
@@ -162,7 +140,7 @@ export function Dashboard() {
         <section className="panel quick-start">
           <div className="section-heading">
             <div>
-              <h2>Start something good</h2>
+              <h2>Bring your code in</h2>
               <p>Choose how to bring your code in.</p>
             </div>
             <Sparkles size={18} />
@@ -189,7 +167,7 @@ export function Dashboard() {
           ].map(([Icon, t, d, to]: any) => (
             <Link className="quick-action" key={t} to={to}>
               <span>
-                <Icon size={20} />
+                <AnimatedIcon icon={Icon} size={20} />
               </span>
               <div>
                 <strong>{t}</strong>
@@ -201,8 +179,7 @@ export function Dashboard() {
           <div className="privacy-note">
             <LockKeyhole size={16} />
             <p>
-              You're in control. Nothing is pushed to your repository from this
-              workspace.
+              Publishing requires your explicit approval. Review changes before sharing them with GitHub.
             </p>
           </div>
         </section>

@@ -7,6 +7,7 @@ import { AppErrorBoundary, LoadingScreen } from "./status";
 import { MotionConfig } from "motion/react";
 import "./styles.css";
 import "./responsive.css";
+import "./design-system.css";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15_000 } },
 });
