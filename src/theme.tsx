@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { Sun, Moon } from "lucide-react";
 import { motion } from "motion/react";
-const initial =
-  localStorage.getItem("theme") ||
-  (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+const preferredTheme = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+let initial = preferredTheme;
+try { const saved = localStorage.getItem("theme"); if(saved === "light" || saved === "dark") initial = saved; } catch { /* Storage can be disabled by browser privacy settings. */ }
+
 document.documentElement.dataset.theme = initial;
 export const useTheme = create<{
   theme: string;
@@ -11,7 +12,7 @@ export const useTheme = create<{
 }>((set) => ({
   theme: initial,
   setTheme: (theme) => {
-    localStorage.setItem("theme", theme);
+    try { localStorage.setItem("theme", theme); } catch { /* Keep the theme usable for this visit. */ }
     document.documentElement.dataset.theme = theme;
     set({ theme });
   },

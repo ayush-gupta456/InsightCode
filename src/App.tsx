@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Link,
@@ -39,6 +39,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { AppErrorBoundary, ErrorScreen, LoadingScreen } from "./status";
 import { ThemeControl } from "./theme";
 import { Recovery } from "./recovery";
 import { api, post, refreshSession, useSession } from "./api";
@@ -116,10 +117,7 @@ export default function App() {
       <Route
         path="*"
         element={
-          <div className="not-found">
-            <h1>Page not found</h1>
-            <Link to="/app">Return to your workspace</Link>
-          </div>
+          <ErrorScreen notFound />
         }
       />
     </Routes>
@@ -174,7 +172,7 @@ function Shell() {
       socket.close();
     };
   }, [token, client]);
-  if (!ready) return <div className="boot">Opening your workspace.</div>;
+  if (!ready) return <LoadingScreen/>;
   if (!user) return <Navigate to="/login" replace />;
   const current =
     nav
@@ -276,7 +274,7 @@ function Shell() {
           </div>
         </header>
         <main className="page" id="workspace-content" tabIndex={-1}>
-          <motion.div key={location.pathname} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} transition={{duration:.18,ease:"easeOut"}}><Outlet /></motion.div>
+          <motion.div key={location.pathname} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} transition={{duration:.18,ease:"easeOut"}}><AppErrorBoundary key={location.pathname}><Suspense fallback={<LoadingScreen compact label="Loading this view"/>}><Outlet /></Suspense></AppErrorBoundary></motion.div>
         </main>
         <footer className="app-footer">
           <span>
@@ -405,14 +403,14 @@ function Landing() {
         <Link to="/">
           <Logo />
         </Link>
-        <div>
+        <nav className="landing-nav" aria-label="Main navigation">
           <a href="#workflow">How it works</a>
           <ThemeControl />
           <Link to="/login">Sign in</Link>
           <Link className="button primary" to="/register">
             Open your workspace <ArrowUpRight size={16} />
           </Link>
-        </div>
+        </nav>
       </header>
       <motion.section
         className="landing-hero"
@@ -429,7 +427,6 @@ function Landing() {
         </h1>
         <p>
           Bring your code into focus with evidence-based reviews,
-          <br />
           repository insights, and an AI assistant that knows the context.
         </p>
         <div className="hero-buttons">
@@ -440,14 +437,15 @@ function Landing() {
             Explore the workflow
           </a>
         </div>
-        <div className="hero-note">
-          <ShieldCheck size={15} />
-          Private reviews <span>�</span>Approval before changes <span>�</span>Explicit GitHub publishing
-        </div>
+        <ul className="hero-note" aria-label="Review safeguards">
+          <li><ShieldCheck size={15} aria-hidden="true"/>Private reviews</li>
+          <li><Check size={15} aria-hidden="true"/>Approval before changes</li>
+          <li><Code2 size={15} aria-hidden="true"/>Explicit GitHub publishing</li>
+        </ul>
       </motion.section>
       <div className="landing-preview">
         <div className="preview-toolbar">
-          <span className="window-dots">? ? ?</span>
+          <span className="window-dots" aria-hidden="true"><i/><i/><i/></span>
           <span>insightcode / your next great idea</span>
           <Badge tone="green">Ready to review</Badge>
         </div>

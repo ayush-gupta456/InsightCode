@@ -1,3 +1,4 @@
+import { LoadingScreen } from "./status";
 import type { ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, ArrowUpRight, Code2 } from "lucide-react";
@@ -79,15 +80,7 @@ export function ErrorBox({ error }: { error: unknown }) {
     </div>
   ) : null;
 }
-export function Loading() {
-  return (
-    <div aria-label="Loading" className="skeletons">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="skeleton" />
-      ))}
-    </div>
-  );
-}
+export function Loading() { return <LoadingScreen compact label="Loading your data"/>; }
 export function Modal({
   open,
   onOpenChange,

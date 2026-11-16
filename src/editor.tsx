@@ -5,7 +5,9 @@ import "monaco-editor/languages/definitions/javascript/register.js";
 import "monaco-editor/languages/definitions/typescript/register.js";
 import "monaco-editor/languages/definitions/python/register.js";
 import "monaco-editor/languages/definitions/java/register.js";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { LoadingScreen } from "./status";
+import { useTheme } from "./theme";
 import { looksLikeJava } from "../shared/language";
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 loader.config({ monaco });
@@ -34,6 +36,7 @@ export function CodeEditor({
   line?: number;
   readOnly?: boolean;
 }) {
+  const { theme } = useTheme();
   const ref = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const decorations = useRef<monaco.editor.IEditorDecorationsCollection | null>(
     null,
@@ -58,13 +61,14 @@ export function CodeEditor({
   useEffect(highlight, [line, path, value]);
   return (
     <Editor
+      loading={<LoadingScreen compact label="Preparing the editor"/>}
       height="100%"
       path={path}
       language={looksLikeJava(value) ? "java" : lang(path)}
       value={value}
       onChange={(v) => onChange?.(v || "")}
       theme={
-        document.documentElement.dataset.theme === "light" ? "vs" : "vs-dark"
+        theme === "light" ? "vs" : "vs-dark"
       }
       onMount={(editor) => {
         ref.current = editor;
@@ -92,15 +96,19 @@ export function CodeDiff({
   original: string;
   modified: string;
 }) {
+  const { theme } = useTheme();
+  const [sideBySide, setSideBySide] = useState(() => matchMedia('(min-width: 900px)').matches);
+  useEffect(() => { const media=matchMedia('(min-width: 900px)'); const update=()=>setSideBySide(media.matches); media.addEventListener('change',update); return ()=>media.removeEventListener('change',update); },[]);
   return (
     <DiffEditor
+      loading={<LoadingScreen compact label="Preparing the comparison"/>}
       height="390px"
       original={original}
       modified={modified}
-      theme="vs-dark"
+      theme={theme === "light" ? "vs" : "vs-dark"}
       options={{
         readOnly: true,
-        renderSideBySide: true,
+        renderSideBySide: sideBySide,
         minimap: { enabled: false },
         fontSize: 12,
         automaticLayout: true,

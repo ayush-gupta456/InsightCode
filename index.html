@@ -9,10 +9,19 @@
     <meta property="og:description" content="Evidence-based code reviews and contextual assistance. Inspect findings and approve every change." />
     <meta property="og:type" content="website" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>InsightCode � Repository intelligence</title>
+    <title>InsightCode | Repository intelligence</title>
   </head>
   <body>
-    <div id="root"></div>
+    <style>
+      #startup { min-height:100dvh;display:grid;place-content:center;justify-items:center;gap:20px;padding:24px;background:#0b0e16;color:#e9ecf4;font:16px system-ui;text-align:center; }
+      #startup svg { color:#b5b1ff; }
+      #startup .startup-line { width:180px;height:3px;background:#242a39;overflow:hidden;border-radius:8px; }
+      #startup .startup-line::after { content:'';display:block;width:40%;height:100%;background:#b5b1ff;animation:startup-scan 1.5s ease-in-out infinite alternate; }
+      @keyframes startup-scan { from { transform:translateX(-100%); } to { transform:translateX(250%); } }
+      @media(prefers-reduced-motion:reduce) { #startup .startup-line::after { animation:none;width:100%; } }
+      @media(prefers-color-scheme:light) { #startup { background:#f6f7fb;color:#1e2535; } }
+    </style>
+    <div id="root"><div id="startup" role="status" aria-live="polite"><svg aria-hidden="true" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18"/></svg><strong>InsightCode</strong><span>Opening your workspace</span><span class="startup-line" aria-hidden="true"></span><noscript>Enable JavaScript to use InsightCode.</noscript></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
