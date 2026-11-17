@@ -83,13 +83,14 @@ export function mergeReviewFindings(existing: Finding[], additional: Finding[]) 
   return all;
 }
 
-async function reviewBatch(context: ReviewChunk[], deterministic: Finding[]): Promise<z.infer<typeof reviewOutput> & {invalidCandidates?:number}> {
+type ReviewRequest = (options: Parameters<typeof generateText>[0]) => Promise<{finishReason:string; output?:unknown; text:string}>;
+export async function reviewBatch(context: ReviewChunk[], deterministic: Finding[], request: ReviewRequest = generateText): Promise<z.infer<typeof reviewOutput> & {invalidCandidates?:number}> {
   const relevant = deterministic.filter(f => context.some(c => c.path === f.file && c.startLine <= f.endLine && f.startLine <= c.endLine));
   const prompt = `Audit every source chunk in this batch for behavioral, syntax, runtime, security and performance defects in its own language. Trace concrete inputs, branching, loops, bounds, nullability, resource lifetime, concurrency, numeric operations and error handling. Distinguish language syntax errors from missing project dependencies. Return actionable findings with literal evidence and a Markdown assessment containing coverage limitations, a per-method complexity table, edge-case tests and correction guidance. Do not put actionable bugs only in the assessment: include each supported defect in findings. Do not invent bugs to fill a quota. Source chunks use absolute one-based startLine/endLine offsets; line numbers are not relative to the chunk. Analyze only provided source and identify dependencies on omitted code. Existing findings (discuss in assessment, do not duplicate): ${JSON.stringify(relevant.map((f) => ({ title: f.title, file: f.file, startLine: f.startLine })))}\nUNTRUSTED_SOURCE_JSON:\n${JSON.stringify(context)}`;
   const abortSignal = AbortSignal.timeout(60_000);
   let output: z.infer<typeof reviewOutput>;
   try {
-    const response = await generateText({
+    const response = await request({
     model: model(),
     system: `${system} ${correctnessChecklist}`,
     prompt,
@@ -101,21 +102,24 @@ async function reviewBatch(context: ReviewChunk[], deterministic: Finding[]): Pr
     abortSignal,
   });
     if (response.finishReason === "length") throw new HttpError(502, "AI review response was truncated; coverage is incomplete");
-    output = response.output;
+    output = reviewOutput.parse(response.output);
   } catch (error) {
     const e = error as {statusCode?: number; name?: string; text?: string};
     if (e.name === "AI_NoObjectGeneratedError" && e.text) {
       try { return recoverReviewOutput(e.text); } catch { /* Retry a malformed complete response below. */ }
     }
     // Retry only a rejected schema or malformed structured response, not quota/auth failures.
-    if (e.statusCode !== 400 && e.name !== "AI_NoObjectGeneratedError") throw error;
-    const fallback = await generateText({
+    if (e.statusCode !== 400 && !["AI_NoObjectGeneratedError", "AI_NoOutputGeneratedError", "ZodError"].includes(e.name || "")) throw error;
+    const fallback = await request({
       model: model(), system: `${system} ${correctnessChecklist}`,
-      prompt: `${prompt}\nReturn only JSON matching this schema: ${JSON.stringify(z.toJSONSchema(reviewOutput))}. No commentary outside JSON.`,
+      prompt: `${prompt}\nReturn concise JSON matching this schema: ${JSON.stringify(z.toJSONSchema(reviewOutput))}. Keep assessment under 6000 characters. No commentary outside JSON.`,
+      // Keep provider JSON grammar enforcement even when its strict schema is rejected.
+      output: Output.json(),
       maxOutputTokens: 10000, maxRetries: 0, abortSignal,
     });
     if (fallback.finishReason === "length") throw new HttpError(502, "AI review exceeded the response limit. Review fewer files at a time");
-    return recoverReviewOutput(fallback.text);
+    if (fallback.output === undefined) throw new HttpError(502, "AI returned no JSON review output; static findings retained");
+    return recoverReviewOutput(JSON.stringify(fallback.output));
   }
   return output;
 }

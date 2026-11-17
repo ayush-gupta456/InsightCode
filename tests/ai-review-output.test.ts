@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Finding } from "../shared/types.js";
-import { mergeReviewFindings, parseReviewOutput, recoverReviewOutput } from "../server/ai.js";
+import { mergeReviewFindings, parseReviewOutput, recoverReviewOutput, reviewBatch } from "../server/ai.js";
 
 test("AI fallback accepts only complete schema-valid JSON", () => {
   const result = { findings: [], assessment: "Source-reviewed assessment" };
@@ -11,6 +11,27 @@ test("AI fallback accepts only complete schema-valid JSON", () => {
   assert.throws(() => parseReviewOutput('{"findings": [], "assessment": ""}'));
   assert.throws(() => parseReviewOutput('{"findings": [{"title": "unsupported claim"}], "assessment": "text"}'));
   assert.throws(() => parseReviewOutput('A generic explanation instead of JSON'));
+});
+
+test("schema fallback retains JSON mode and reads parsed provider output instead of prose", async () => {
+  const key=process.env.GEMINI_API_KEY, model=process.env.GEMINI_MODEL;
+  process.env.GEMINI_API_KEY="test-key"; process.env.GEMINI_MODEL="test-model";
+  let calls=0;
+  try {
+    const result=await reviewBatch([{path:"a.py",startLine:1,endLine:1,text:"print(1)"}],[],async options=>{
+      calls++;
+      assert.ok(options.output,"JSON output must remain enabled on both attempts");
+      if(calls===1) throw Object.assign(new Error("Malformed native output"),{name:"AI_NoObjectGeneratedError",text:"{incomplete"});
+      return {finishReason:"stop",text:"not the structured response",output:{findings:[],assessment:"Reviewed source"}};
+    });
+    assert.equal(calls,2); assert.equal(result.assessment,"Reviewed source");
+    calls=0;
+    await assert.rejects(reviewBatch([{path:"a.py",startLine:1,endLine:1,text:"print(1)"}],[],async()=>{calls++;throw Object.assign(new Error("private response"),{statusCode:429});}));
+    assert.equal(calls,1,"quota failures must not trigger a second generation");
+  } finally {
+    if(key===undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY=key;
+    if(model===undefined) delete process.env.GEMINI_MODEL; else process.env.GEMINI_MODEL=model;
+  }
 });
 
 test("a malformed claim cannot discard other schema-valid claims in a complete response", () => {
