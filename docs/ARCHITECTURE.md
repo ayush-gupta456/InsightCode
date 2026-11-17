@@ -1,29 +1,33 @@
-# Architecture and implementation plan
+# Architecture
 
-## Inspection
+InsightCode combines a React/Vite frontend with an Express/TypeScript API. The frontend uses the same-origin `/api` proxy; Socket.IO polling provides review updates. See the README for the component diagram and `docs/DEPLOYMENT.md` for production topology.
 
-The workspace contains an unborn Git repository. Its configured origin, https://github.com/ayush-gupta456/InsightCode.git, returns no refs; the GitHub contents API confirms it is empty. No source, environment configuration, existing Gemini integration, models or deployment configuration exists to preserve. The deployed URL could not be fetched by the research tool. The user explicitly authorized a new application here.
+## Frontend
 
-## Implementation sequence
+`src/App.tsx` declares public routes and the authenticated workspace shell. Workspace routes lazy-load review, chart and integration views. `src/Landing.tsx` contains the marketing site and clearly labeled illustrative review. `src/auth-story.tsx` is the lightweight shared authentication companion; authentication does not import the entire landing module.
 
-1. Establish a typed React/Vite interface and Express API, validation, authentication and durable storage.
-2. Deliver the code-review vertical slice: projects, pasted code, text files, bounded ZIP import, deterministic evidence-based analysis, optional Gemini enrichment, review workspace and history.
-3. Add repository indexing, GitHub read integration, conversations, patch preview/approval/revert and actual analytics.
-4. Verify security boundaries, integration behavior and builds; document the exact completion status and remaining infrastructure work.
+`ui.tsx`, `motion-ui.tsx`, `theme.tsx` and `status.tsx` provide shared components, restrained motion, theme state and recovery screens. Styles use shared semantic tokens with responsive rules. Monaco and diff tooling live in `editor.tsx` and load for review workflows.
 
-## Boundaries
+## API and persistence
 
-Browser -> same-origin /api -> Express -> persistence and analysis services. All external input is validated. Authentication uses short-lived signed bearer tokens. Local storage is single-process JSON for development; MongoDB persistence, optional BullMQ, OAuth, refresh rotation and team roles are implemented. Production integration verification and distributed concurrency controls remain required. The API never executes submitted code directly; optional Docker workers execute bounded checks. Rules report hotspots, not verified exploitable vulnerabilities. Generated fixes are only applied to stored review snapshots after explicit approval; no Git writes are performed.
+`server/app.ts` assembles validated routes. Signed access tokens, rotating refresh sessions, ownership checks and team roles govern access. `store.ts` uses MongoDB in production and a single-process JSON development driver otherwise. Users own projects, reviews, findings, conversations and proposed fixes; analytics derive from stored review data.
 
-## Data
+## Review pipeline
 
-Users own projects, reviews, conversations and fixes. Every object route checks ownership. Reviews retain source snapshots, findings, logs and deterministic scores. Metrics derive from stored reviews; empty accounts have zero values.
+Bounded source input becomes an isolated review snapshot. Static rules and language helpers report evidence with source locations; indexing derives symbols/imports for context. Gemini can add optional analysis and assistance, with schema and evidence validation. Scores summarize detected findings and do not certify correctness.
 
-## Research
+Proposed changes are previewed as diffs and applied to snapshots only after approval. Reverts operate on those snapshots. GitHub publication is a separate, explicitly approved action with repository-head checks.
 
-- https://ai.google.dev/gemini-api/docs/structured-output — JSON schema responses still need semantic validation.
-- https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries — verify the raw payload with HMAC SHA-256 and constant-time comparison.
+## Jobs and integrations
 
-## Deployment direction
+Redis/BullMQ enables queued review and webhook jobs. Webhook requests verify raw-payload signatures, enqueue before acknowledgement and use delivery IDs/retries. This supports at-least-once processing; do not claim exactly-once external effects.
 
-Vercel for static frontend; private Node service behind TLS for API; MongoDB Atlas, Redis/BullMQ and a dedicated Docker worker tier for production. Do not execute source on the API host. Configured analyzer execution uses short-lived, network-disabled containers with read-only roots, unprivileged users, memory/CPU/PID limits, timeouts and bounded output. Never run repository scripts to inspect uploaded code.
+Optional integrations include GitHub OAuth/imports/comments, Google sign-in and configured email delivery. Their availability depends on real provider configuration. External source transmission occurs when the associated AI/integration feature is enabled.
+
+## Execution boundary
+
+The API never directly executes submitted source. Optional Docker analyzers run with networking disabled, read-only roots, unprivileged users, timeouts and resource/output limits. Use a dedicated Docker-capable host and inspect `workers/` for the implemented tools.
+
+## Scaling limits
+
+Application locks and rate limits remain process-local. Use one API instance until distributed coordination and shared limits exist. Trust proxy addresses only through verified explicit IP/CIDR configuration. Production persistence, provider consent/delivery, workers and backup restoration require environment-specific verification.
