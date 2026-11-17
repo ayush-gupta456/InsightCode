@@ -52,3 +52,10 @@ AI review now explicitly audits graph invariants and numeric boundaries. Distinc
 
 
 Applying or reverting a snapshot patch clears its earlier AI assessment and marks AI coverage stale; static findings remain available. The UI explicitly explains that older chat responses can refer to the previous revision.
+
+
+## Full review pipeline regression
+
+`tests/review-pipeline.test.ts` submits the complete original Java example through the actual Express API and local persistence. It checks four source-located findings in static mode and when the injected AI provider fails; incomplete AI reviews are unscored. It checks rerunning a legacy zero-finding record into a new review, preserving history, authorization boundaries, analyzer release metadata, and exclusion of incomplete scores from analytics. `displayedReviewScore` also hides legacy saved 100 scores when requested AI analysis failed.
+
+Validation on 2026-11-17: all 30 unit/API/runtime tests passed and strict TypeScript checking passed. Live provider success was not verified. Browser and build validation were blocked by automatic approval review reporting an unexpected outbound telemetry request; browser tests could not reach the blocked local frontend. Added browser regressions are pending execution in an approved environment. The public API still reported `java-traversal-v1` at revision `57a5ce58ca9085a62622f773de15286af125a990`; the new analyzer must be deployed before evaluating new live results. These focused heuristics do not establish complete detection for arbitrary programs.

@@ -26,6 +26,7 @@ import {
   LockKeyhole,
   Trash2,
 } from "lucide-react";
+import { displayedReviewScore } from "../shared/review-metadata";
 import { api, post, useSession } from "./api";
 import { Badge, Empty, ErrorBox, Loading, Modal, PageTitle, date } from "./ui";
 import type { Review, Project } from "../shared/types";
@@ -368,10 +369,10 @@ export function ReviewTable({
               <td>
                 <span
                   className={
-                    r.score != null && r.score >= 80 ? "ink-green" : "ink-amber"
+                    displayedReviewScore(r) != null && displayedReviewScore(r)! >= 80 ? "ink-green" : "ink-amber"
                   }
                 >
-                  {r.score ?? "-"}
+                  {displayedReviewScore(r) ?? "Unscored"}
                 </span>
               </td>
               <td className="muted">{date(r.createdAt)}</td>

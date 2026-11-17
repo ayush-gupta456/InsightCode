@@ -23,3 +23,10 @@ Monitor `/api/health`, API process logs, failed review logs, queue failures, dis
 ## Proxy and instance boundary
 
 Set TRUSTED_PROXY_CIDRS only to verified reverse-proxy addresses or subnets; arbitrary hop counts and boolean trust are rejected. Restrict direct API ingress before trusting forwarded addresses. Authentication/API limits remain in memory and writes use process-local locks: keep exactly one API instance. Redis queueing alone does not make this application safe for multiple API instances. External provider credentials, Docker availability and live header behavior require deployment verification.
+
+
+## Verify the review backend release
+
+The Vercel frontend and Render API deploy separately. After merging review analyzer changes, deploy the latest main commit for the existing insightcode-api Render service. Check `/api/health` on the public frontend and API: `analysisVersion` must be `java-shortest-path-v2`, and `revision` must identify the deployed commit. A frontend deployment alone does not update static checks. Run `npx tsx scripts/check-deployment.ts https://insightcode.vercel.app` to fail explicitly on the older analyzer.
+
+Stored reviews are immutable analysis records. Use **Run review again** after the backend is updated; it creates a fresh record from the saved snapshot. AI failures retain deterministic findings but have no numeric score. Check Review logs for provider configuration, quota, or response failures. Never paste API keys into logs or issues.

@@ -1,0 +1,32 @@
+import {test,expect} from "@playwright/test";
+import fs from "node:fs/promises";
+const content=await fs.readFile(new URL("../tests/fixtures/BuggyDijkstraOriginal.java",import.meta.url),"utf8");
+
+test("real API review displays all Dijkstra findings, survives AI failure, filters and reruns",async({page})=>{
+  test.setTimeout(90_000);
+  const account=await page.request.post("/api/auth/register",{data:{name:"Pipeline QA",email:`pipeline-ui-${Date.now()}@example.test`,password:"pipeline-ui-password-123"}});
+  expect(account.status()).toBe(201);
+  const {token}=await account.json();
+  const submitted=await page.request.post("/api/reviews",{headers:{Authorization:`Bearer ${token}`},data:{name:"Dijkstra API to UI",files:[{path:"BuggyDijkstra.java",content}],ai:true}});
+  expect(submitted.status()).toBe(202);
+  const review=await submitted.json();
+  await page.goto(`/app/reviews/${review.id}`);
+  await expect(page.getByRole("heading",{name:"Vertex finalized while relaxing an edge",exact:true})).toBeVisible();
+  await expect(page.locator('.finding-card')).toHaveCount(4);
+  await expect(page.locator('.review-coverage')).toContainText("AI analysis failed");
+  await expect(page.locator('.findings-summary')).toContainText("Unscored");
+  await expect(page.locator('.findings-summary')).not.toContainText("100/100");
+  await page.getByRole("heading",{name:"Shortest-path source distance must start at zero",exact:true}).click();
+  await expect(page.locator('.finding-detail')).toContainText("single vertex");
+  await page.getByLabel("Filter severity").selectOption("high");
+  await expect(page.locator('.finding-card')).toHaveCount(3);
+  await page.getByLabel("Filter severity").selectOption("all");
+  await expect(page.locator('.finding-card')).toHaveCount(4);
+  await page.getByRole("button",{name:"Run review again",exact:true}).click();
+  await expect(page).not.toHaveURL(new RegExp(review.id));
+  await expect(page.locator('.finding-card')).toHaveCount(4);
+  await page.route("**/api/health",route=>route.fulfill({json:{status:"ok",analysisVersion:"java-traversal-v1",revision:"old"}}));
+  await page.reload();
+  await expect(page.getByRole("alert")).toContainText("Deploy the updated API");
+  await expect(page.getByRole("button",{name:"Run review again",exact:true})).toBeDisabled();
+});

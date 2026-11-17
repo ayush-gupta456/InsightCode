@@ -6,7 +6,7 @@ test("private workspace, source upload, findings, navigation and responsive layo
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Ship with confidence/ }),
+    page.getByRole("heading", { name: /Less uncertainty/ }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Start your first review" }).click();
   await page.getByLabel("Your name").fill("Browser QA");
@@ -23,7 +23,7 @@ test("private workspace, source upload, findings, navigation and responsive layo
     page.getByRole("heading", { name: "Welcome back, Browser." }),
   ).toBeVisible();
   await page.screenshot({
-    path: "docs/screenshots/dashboard.png",
+    path: "test-results/dashboard.png",
     fullPage: true,
   });
   await page.getByRole("link", { name: "Projects", exact: true }).click();
@@ -66,7 +66,7 @@ test("private workspace, source upload, findings, navigation and responsive layo
     page.getByRole("heading", { name: "Recommendation", exact: true }),
   ).toBeVisible();
   await page.screenshot({
-    path: "docs/screenshots/review-workspace.png",
+    path: "test-results/review-workspace.png",
     fullPage: true,
   });
   await page.getByRole("button", { name: "Index", exact: true }).click();
@@ -114,7 +114,7 @@ test("private workspace, source upload, findings, navigation and responsive layo
     ),
   ).toBe(true);
   await page.screenshot({
-    path: "docs/screenshots/mobile.png",
+    path: "test-results/mobile.png",
     fullPage: true,
   });
   expect(errors).toEqual([]);
