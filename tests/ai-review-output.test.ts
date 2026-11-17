@@ -32,6 +32,14 @@ test("schema fallback retains JSON mode and reads parsed provider output instead
     calls=0;
     await assert.rejects(reviewBatch([{path:"a.py",startLine:1,endLine:1,text:"print(1)"}],[],async()=>{calls++;throw Object.assign(new Error("private response"),{statusCode:429});}));
     assert.equal(calls,1,"quota failures must not trigger a second generation");
+    calls=0;
+    const transient=await reviewBatch([{path:"a.py",startLine:1,endLine:1,text:"print(1)"}],[],async options=>{
+      calls++;
+      assert.equal(options.maxRetries,0,"Avoid nested retries amplifying provider failures");
+      if(calls===1) throw Object.assign(new Error("provider unavailable"),{statusCode:503});
+      return {finishReason:"stop",text:"",output:{findings:[],assessment:"Recovered JSON response"}};
+    });
+    assert.equal(calls,2);assert.equal(transient.assessment,"Recovered JSON response");
   } finally {
     if(key===undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY=key;
     if(model===undefined) delete process.env.GEMINI_MODEL; else process.env.GEMINI_MODEL=model;
