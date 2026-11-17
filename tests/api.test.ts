@@ -193,6 +193,12 @@ test("account → project → review → finding → patch → revert with acces
       ).status,
       404,
     );
+    const assessedReview = await store.get("reviews", reviewId);
+    assert.ok(assessedReview);
+    assessedReview.ai = true;
+    assessedReview.aiStatus = "completed";
+    assessedReview.assessment = "Assessment of the original snapshot";
+    await store.put("reviews", assessedReview);
     const applied = await request(
       `/fixes/${patch.body.id}/apply`,
       "POST",
@@ -201,6 +207,8 @@ test("account → project → review → finding → patch → revert with acces
     );
     assert.equal(applied.status, 200);
     assert.equal(applied.body.review.findings.length, 0);
+    assert.equal(applied.body.review.assessment, undefined);
+    assert.equal(applied.body.review.aiStatus, "stale");
     assert.match(applied.body.fix.validation, /tests.*have not run/);
     assert.equal(
       (
@@ -220,6 +228,8 @@ test("account → project → review → finding → patch → revert with acces
       token,
     );
     assert.equal(reverted.status, 200);
+    assert.equal(reverted.body.review.assessment, undefined);
+    assert.equal(reverted.body.review.aiStatus, "stale");
     assert.equal(reverted.body.review.files[0].content, file.content);
     const active = reverted.body.review.findings[0];
     const dismissed = await request(

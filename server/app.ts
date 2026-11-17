@@ -723,6 +723,8 @@ export async function createApp(store: Store, secret: string) {
     file.content = action === "apply" ? fix.replacement : fix.original;
     review.revision++;
     review.findings = analyze(review.files);
+    delete review.assessment;
+    review.aiStatus = review.ai ? "stale" : "disabled";
     review.score = score(review.findings);
     fix.status = action === "apply" ? "applied" : "reverted";
     fix.validation =

@@ -1,3 +1,4 @@
+import { shortestPathFindings } from "./java-shortest-path.js";
 import { randomUUID } from "node:crypto";
 import type { Finding, SourceFile } from "../shared/types.js";
 import { looksLikeJava } from "../shared/language.js";
@@ -45,5 +46,5 @@ export function javaFindings(file: SourceFile): Finding[] {
       report(start + removal.index, "Cycle removal needs a cycle-at-head case", "If Floyd's meeting point is the head, resetting the other pointer to head makes their next pointers equal immediately. Cutting fast.next then disconnects the rest of a multi-node cycle instead of its tail.", "Find the cycle entry by moving slow from head and fast from the meeting point until slow == fast. Then walk a separate tail pointer around the cycle until tail.next == entry and set tail.next = null; return after removal. Test a cycle entering at head and verify every original node remains reachable.", .85);
     }
   }
-  return findings;
+  return [...findings, ...shortestPathFindings(file, source)];
 }
