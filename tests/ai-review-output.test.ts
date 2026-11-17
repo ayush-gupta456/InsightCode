@@ -40,6 +40,16 @@ test("schema fallback retains JSON mode and reads parsed provider output instead
       return {finishReason:"stop",text:"",output:{findings:[],assessment:"Recovered JSON response"}};
     });
     assert.equal(calls,2);assert.equal(transient.assessment,"Recovered JSON response");
+    calls=0;
+    const fenced=await reviewBatch([{path:"a.py",startLine:1,endLine:1,text:"print(1)"}],[],async()=>{
+      calls++;
+      if(calls===1) throw Object.assign(new Error("unavailable"),{statusCode:503});
+      throw Object.assign(new Error("SDK parser rejected wrapper"),{name:"AI_NoObjectGeneratedError",finishReason:"stop",text:'```json\n{"findings":[],"assessment":"Complete fenced response"}\n```'});
+    });
+    assert.equal(fenced.assessment,"Complete fenced response");assert.equal(calls,2);
+    await assert.rejects(reviewBatch([{path:"a.py",startLine:1,endLine:1,text:"print(1)"}],[],async()=>{
+      throw Object.assign(new Error("cut off"),{name:"AI_NoObjectGeneratedError",finishReason:"length",text:'{"findings":[],"assessment":"Incomplete coverage"}'});
+    }),/cut off/);
   } finally {
     if(key===undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY=key;
     if(model===undefined) delete process.env.GEMINI_MODEL; else process.env.GEMINI_MODEL=model;
