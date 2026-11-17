@@ -1,6 +1,6 @@
 import type { Review } from "./types.js";
 
-export const ANALYSIS_VERSION = "java-shortest-path-v2";
+export const ANALYSIS_VERSION = "multilanguage-review-v3";
 
 /** A requested but incomplete AI pass must never look like a perfect review. */
 export function hasCompleteRequestedAnalysis(review: Pick<Review, "ai" | "aiStatus">) {

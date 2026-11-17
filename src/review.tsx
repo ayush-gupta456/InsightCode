@@ -253,7 +253,7 @@ export function NewReview() {
                   accept={
                     mode === "zip"
                       ? ".zip"
-                      : ".ts,.tsx,.js,.jsx,.mjs,.py,.java,.go,.rs,.json,.html,.css,.md,.yml,.yaml"
+                      : ".ts,.tsx,.mts,.cts,.js,.jsx,.mjs,.cjs,.py,.java,.go,.rs,.c,.h,.cpp,.cc,.cxx,.hpp,.cs,.php,.rb,.swift,.kt,.kts,.scala,.sh,.bash,.sql,.lua,.dart,.r,.vue,.svelte,.toml,.xml,.json,.html,.css,.md,.yml,.yaml"
                   }
                   onChange={async (e) => {
                     setError(undefined);
@@ -637,6 +637,8 @@ export function ReviewWorkspace() {
             <div className="findings-pane">
               <div className="review-coverage" role="status">
                 {r.analysisVersion && <p>Analyzer: {r.analysisVersion}</p>}
+                {r.aiCoverage && <p>AI source batches: {r.aiCoverage.completed}/{r.aiCoverage.planned} reviewed. {r.aiCoverage.omitted > 0 && `${r.aiCoverage.omitted} exceed this review budget; submit smaller groups.`}</p>}
+                {r.aiStatus === "partial" && <p role="alert">AI review is incomplete. Findings from successful batches are retained. Check Review logs and rerun failed source groups.</p>}
                 {r.aiStatus === "stale" ? "Snapshot changed. Findings reflect static reanalysis only. Start a new AI review for an updated assessment; previous chat replies may refer to an older revision." : r.aiStatus === "failed" ? "AI analysis failed. Only static results are available; open Review logs for details." : !r.ai ? "Basic static review only. Enable AI on a new review for broader logic and complexity analysis." : r.aiStatus === "completed" ? "AI assessment available in Assistant. Findings are source-backed hypotheses, not executed tests." : "AI coverage: check Review logs for completion."}
               </div>
               <div className="findings-summary">

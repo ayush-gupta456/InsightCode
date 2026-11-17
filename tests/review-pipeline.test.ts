@@ -15,8 +15,14 @@ test("full review API keeps four Java findings when AI fails and reanalyzes old 
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "insightcode-review-pipeline-"));
   const store = new Store(directory, ""); await store.init();
   let aiCalls = 0;
+  let partialMode = false;
   const {app,closeQueue} = await createApp(store, "pipeline-secret-".repeat(4), {
-    enrich: async () => { aiCalls++; throw new HttpError(503,"AI test provider unavailable"); },
+    enrich: async (_files, findings) => {
+      aiCalls++;
+      if (partialMode) return {findings, assessment:"One source batch reviewed", rejected:0, partial:true,
+        coverage:{planned:2, completed:1, omitted:0, failures:["Batch 2: AI provider unavailable"]}};
+      throw new HttpError(503,"AI test provider unavailable");
+    },
   });
   const server = app.listen(0,"127.0.0.1");
   await new Promise<void>(resolve=>server.once("listening",resolve));
@@ -65,6 +71,13 @@ test("full review API keeps four Java findings when AI fails and reanalyzes old 
     assert.equal((await request(`/reviews/${aiReview.id}`)).body.findings.length,0,"original history is retained");
     const analytics=await request("/analytics");assert.equal(analytics.body.score,66);assert.equal(analytics.body.excludedScores,1);
     assert.equal(analytics.body.trends.length,2);
+    partialMode = true;
+    const partialSubmission = await request("/reviews", "POST", {name:"Partial provider coverage",files:[{path:"BuggyDijkstra.java",content:source}],ai:true});
+    const partialReview = await completed(partialSubmission.body.id);
+    checkFindings(partialReview);
+    assert.equal(partialReview.aiStatus, "partial");
+    assert.equal(partialReview.score, undefined);
+    assert.equal(partialReview.aiCoverage?.completed, 1);
     assert.equal((await request(`/reviews/${aiReview.id}/rerun`,"POST",{ai:false},"invalid")).status,401);
     const other=await request("/auth/register","POST",{name:"Other user",email:"other-pipeline@example.test",password:"pipeline-password-456"});
     assert.equal((await request(`/reviews/${aiReview.id}/rerun`,"POST",{},other.body.token)).status,404);

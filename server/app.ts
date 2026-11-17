@@ -284,7 +284,8 @@ export async function createApp(store: Store, secret: string, services: { enrich
         ? "MongoDB"
         : "Local development store",
       queue: process.env.REDIS_URL ? "BullMQ" : "Local background jobs",
-      analyzers: ["InsightCode rules", "TypeScript AST", ...configuredAnalyzers()],
+      analysisVersion: ANALYSIS_VERSION,
+      analyzers: ["InsightCode rules", "Java traversal and shortest-path heuristics", "JavaScript/TypeScript syntax parser", "JSON parser", ...configuredAnalyzers()],
       externalAnalyzers: process.env.ANALYZER_IMAGE ? 'Docker image configured; execution availability not verified' : 'Not configured',
       isolatedTests: !!process.env.ANALYZER_IMAGE,
       billing: false,
@@ -338,6 +339,7 @@ export async function createApp(store: Store, secret: string, services: { enrich
       review.analysisVersion = ANALYSIS_VERSION;
       review.analysisRevision = process.env.RENDER_GIT_COMMIT || "local";
       review.aiStatus = review.ai ? "pending" : "disabled";
+      delete review.aiCoverage;
       review.logs.push(`Source accepted. Starting deterministic analysis (${ANALYSIS_VERSION}).`);
       await saveReview(review);
       review.findings = analyze(review.files);
@@ -354,7 +356,9 @@ export async function createApp(store: Store, secret: string, services: { enrich
           const result = await reviewEnricher(review.files, review.findings);
           review.findings = result.findings;
           review.assessment = result.assessment;
-          review.aiStatus = "completed";
+          review.aiStatus = result.partial ? "partial" : "completed";
+          review.aiCoverage = result.coverage;
+          if (result.coverage) review.logs.push(`AI source coverage: ${result.coverage.completed}/${result.coverage.planned} batches; ${result.coverage.omitted} omitted. ${result.coverage.failures.join("; ")}`);
           if (result.rejected) review.logs.push(`${result.rejected} AI findings rejected because source evidence did not match.`);
           review.logs.push("Validated AI findings against source evidence.");
         } catch (e) {
@@ -747,6 +751,7 @@ export async function createApp(store: Store, secret: string, services: { enrich
     review.findings = analyze(review.files);
     delete review.assessment;
     review.aiStatus = review.ai ? "stale" : "disabled";
+    delete review.aiCoverage;
     review.score = hasCompleteRequestedAnalysis(review) ? score(review.findings) : undefined;
     fix.status = action === "apply" ? "applied" : "reverted";
     fix.validation =

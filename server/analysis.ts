@@ -5,6 +5,7 @@ import { filesSchema, safePath, HttpError } from "./security.js";
 import type { Finding, SourceFile } from "../shared/types.js";
 import { javaFindings } from "./java-analysis.js";
 import { looksLikeJava } from "../shared/language.js";
+import { syntaxFindings } from "./syntax-analysis.js";
 
 export function language(path: string) {
   const ext = path.split(".").pop()?.toLowerCase();
@@ -16,10 +17,17 @@ export function language(path: string) {
         js: "javascript",
         jsx: "javascript",
         mjs: "javascript",
+        cjs: "javascript",
+        mts: "typescript",
+        cts: "typescript",
         py: "python",
         java: "java",
         go: "go",
         rs: "rust",
+        c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", hpp: "cpp",
+        cs: "csharp", php: "php", rb: "ruby", swift: "swift", kt: "kotlin", kts: "kotlin",
+        scala: "scala", sh: "shell", bash: "shell", sql: "sql", lua: "lua", dart: "dart",
+        r: "r", R: "r", vue: "vue", svelte: "svelte", toml: "toml", xml: "xml",
         json: "json",
         css: "css",
         html: "html",
@@ -145,6 +153,7 @@ export function analyze(files: SourceFile[]): Finding[] {
   const findings: Finding[] = [];
   for (const file of files) {
     findings.push(...javaFindings(file));
+    findings.push(...syntaxFindings(file, looksLikeJava(file.content) ? "java" : language(file.path)));
     const lines = file.content.split(/\r?\n/);
     lines.forEach((text, index) => {
       if (/^\s*(\/\/|#|\*|<!--)/.test(text)) return;
