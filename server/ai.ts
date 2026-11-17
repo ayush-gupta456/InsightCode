@@ -98,7 +98,7 @@ export async function reviewBatch(context: ReviewChunk[], deterministic: Finding
       schema: reviewOutput,
     }),
     maxOutputTokens: 10000,
-    maxRetries: 1,
+    maxRetries: 0,
     abortSignal,
   });
     if (response.finishReason === "length") throw new HttpError(502, "AI review response was truncated; coverage is incomplete");
@@ -108,8 +108,9 @@ export async function reviewBatch(context: ReviewChunk[], deterministic: Finding
     if (e.name === "AI_NoObjectGeneratedError" && e.text) {
       try { return recoverReviewOutput(e.text); } catch { /* Retry a malformed complete response below. */ }
     }
-    // Retry only a rejected schema or malformed structured response, not quota/auth failures.
-    if (e.statusCode !== 400 && !["AI_NoObjectGeneratedError", "AI_NoOutputGeneratedError", "ZodError"].includes(e.name || "")) throw error;
+    // One JSON-mode recovery for schema or transient provider failures; never auth/quota.
+    const transient = e.statusCode !== undefined && e.statusCode >= 500 && e.statusCode <= 599;
+    if (!transient && e.statusCode !== 400 && !["AI_NoObjectGeneratedError", "AI_NoOutputGeneratedError", "ZodError"].includes(e.name || "")) throw error;
     const fallback = await request({
       model: model(), system: `${system} ${correctnessChecklist}`,
       prompt: `${prompt}\nReturn concise JSON matching this schema: ${JSON.stringify(z.toJSONSchema(reviewOutput))}. Keep assessment under 6000 characters. No commentary outside JSON.`,
