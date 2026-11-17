@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analyze, language, importZip } from "../server/analysis.js";
+import { analyze, language, importZip, indexRepository } from "../server/analysis.js";
 import { reviewBatches } from "../server/review-context.js";
 import { enrich, locateEvidence } from "../server/ai.js";
 import { displayedReviewScore } from "../shared/review-metadata.js";
@@ -12,6 +12,7 @@ test("source imports retain C, C++, C#, Python, PHP, Ruby, Go and Rust", () => {
   const imported = importZip(Buffer.from(zipSync(Object.fromEntries(paths.map(p => [p, strToU8("source")])))));
   assert.deepEqual(imported.map(f => f.path), paths);
   for (const p of paths) assert.notEqual(language(p), "plaintext");
+  assert.equal(indexRepository([{path:"Program.cs",content:"using System; public class Program { static void Main() { Console.WriteLine(1); } }"}])[0].language, "csharp");
 });
 
 test("built-in parsing finds JS, TS and JSON syntax failures without executing source", () => {
@@ -43,6 +44,7 @@ test("provider retry wrappers report actionable quota errors without response bo
   assert.doesNotMatch(aiFailureMessage({cause:{lastError:{statusCode:403,message:"secret"}}}), /secret/);
   const cycle: {cause?:unknown} = {}; cycle.cause = cycle;
   assert.match(aiFailureMessage(cycle), /could not be validated/);
+  assert.match(aiFailureMessage({name:"AI_NoObjectGeneratedError",finishReason:"length",text:"private response"}), /token limit/);
 });
 
 test("evidence repair accepts unique literal matches and rejects ambiguous or fabricated claims", () => {
