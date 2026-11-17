@@ -27,3 +27,28 @@ The corrected implementation is in `docs/examples/CorrectedLinkedListCycle.java`
 Browser tests cover the complete workspace flow, password controls, and long responses on desktop and mobile, including end-of-response visibility and download. `scripts/check-live-java-review.ts` is an explicit opt-in provider check; it needs GEMINI_API_KEY and GEMINI_MODEL locally. Provider output is saved under ignored `test-results/` for inspection.
 
 Live GitHub OAuth, Docker analyzer execution, and every possible language/algorithm are outside these regression tests. They must not be described as verified by this suite.
+
+## Dijkstra regression
+
+
+
+The priority-queue shortest-path checks now cover nonzero source initialization, subtraction comparators, unchecked int distance addition and visited-state finalization during relaxation. They recognize the queue/relaxation structure within a method, rather than relying on the method name or comments saying “BUG”. They work for Java source accidentally named `main.ts`; comments and string examples are masked before matching.
+
+
+
+The supplied graph returns `[1, 5, 2, INF, INF]` in the buggy implementation. The expected distances from source 0 are `[0, 3, 1, 8, 10]`. Prematurely visiting neighbors causes their outgoing edges to be skipped. The nonzero initial source creates an additional offset.
+
+
+
+The small sample does not overflow. The distance-addition risk requires large weights: `2147483646 + 2` wraps to a negative int. A distance exactly equal to `Integer.MAX_VALUE` also collides with the unreachable sentinel. A subtraction comparator can reverse signed priorities (for example `MIN_VALUE - 1`), but is safe for priorities restricted to nonnegative int values. Its finding is conditional and does not claim that the small sample demonstrates overflow. The premature visited defect can mask subsequent queue behavior.
+
+
+
+`docs/examples/CorrectedDijkstra.java` uses long distances/priorities, a safe comparator, zero initialization, extract-min finalization and nonnegative-weight validation. Regression tests check each fix independently, renamed variables, CRLF/minified source, exact evidence lines, method isolation, overflow guards and unflagged corrected code. A JDK runtime probe compares the corrected algorithm with an independent Bellman–Ford oracle on deterministic generated graphs, and tests large weights, disconnected/singleton graphs, self/zero edges and invalid input.
+
+
+
+AI review now explicitly audits graph invariants and numeric boundaries. Distinct findings on overlapping source lines are retained; only equivalent normalized-title claims on overlapping lines are deduplicated. No live model response or general all-bug coverage is guaranteed by these checks. Existing stored reviews need a new review to run the updated analyzer.
+
+
+Applying or reverting a snapshot patch clears its earlier AI assessment and marks AI coverage stale; static findings remain available. The UI explicitly explains that older chat responses can refer to the previous revision.

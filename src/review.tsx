@@ -624,7 +624,7 @@ export function ReviewWorkspace() {
           {tab === "findings" ? (
             <div className="findings-pane">
               <div className="review-coverage" role="status">
-                {r.aiStatus === "failed" ? "AI analysis failed. Only static results are available; open Review logs for details." : !r.ai ? "Basic static review only. Enable AI on a new review for broader logic and complexity analysis." : r.aiStatus === "completed" ? "AI assessment available in Assistant. Findings are source-backed hypotheses, not executed tests." : "AI coverage: check Review logs for completion."}
+                {r.aiStatus === "stale" ? "Snapshot changed. Findings reflect static reanalysis only. Start a new AI review for an updated assessment; previous chat replies may refer to an older revision." : r.aiStatus === "failed" ? "AI analysis failed. Only static results are available; open Review logs for details." : !r.ai ? "Basic static review only. Enable AI on a new review for broader logic and complexity analysis." : r.aiStatus === "completed" ? "AI assessment available in Assistant. Findings are source-backed hypotheses, not executed tests." : "AI coverage: check Review logs for completion."}
               </div>
               <div className="findings-summary">
                 <div>
