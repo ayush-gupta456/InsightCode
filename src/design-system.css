@@ -1752,3 +1752,6 @@ tbody tr:hover {
     transition: none;
   }
 }
+
+
+.findings-summary strong.unscored { font-size: 20px; letter-spacing: -.03em; }

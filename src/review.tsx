@@ -29,6 +29,7 @@ import {
   X,
   RotateCcw,
 } from "lucide-react";
+import { ANALYSIS_VERSION, displayedReviewScore } from "../shared/review-metadata";
 import { api, post } from "./api";
 import { Badge, Empty, ErrorBox, Loading, Modal, PageTitle } from "./ui";
 import { CodeDiff, CodeEditor } from "./editor";
@@ -207,7 +208,7 @@ export function NewReview() {
                   }
                 }}
               >
-                {loadingBranches ? "Loading." : "Load branches"}
+                {loadingBranches ? "Loading…" : "Load branches"}
               </button>
               <label>
                 Branch or commit
@@ -243,8 +244,8 @@ export function NewReview() {
                 </strong>
                 <span>
                   {mode === "zip"
-                    ? "5 MB compressed � 2 MB expanded � 200 source files"
-                    : "Up to 200 text files � 250 KB each � 2 MB total"}
+                    ? "5 MB compressed · 2 MB expanded · 200 source files"
+                    : "Up to 200 text files · 250 KB each · 2 MB total"}
                 </span>
                 <input
                   type="file"
@@ -375,7 +376,7 @@ export function NewReview() {
               ) : (
                 <ScanIcon />
               )}
-              {submit.isPending ? "Preparing review." : "Start review"}
+              {submit.isPending ? "Preparing review…" : "Start review"}
               <ArrowRight size={16} />
             </button>
           </section>
@@ -398,6 +399,7 @@ function ScanIcon() {
   return <Play size={16} />;
 }
 export function ReviewWorkspace() {
+  const navigate = useNavigate();
   const { id } = useParams();
   const [params] = useSearchParams();
   const client = useQueryClient();
@@ -410,6 +412,7 @@ export function ReviewWorkspace() {
         ? 1000
         : false,
   });
+  const health = useQuery({ queryKey: ["backend-health"], queryFn: () => api<{analysisVersion?: string; revision?: string}>("/health"), staleTime: 30_000 });
   const [path, setPath] = useState("");
   const [selected, setSelected] = useState(params.get("finding") || "");
   const [filter, setFilter] = useState("all");
@@ -443,6 +446,8 @@ export function ReviewWorkspace() {
   if (q.isLoading) return <Loading />;
   if (q.error || !r || !current)
     return <ErrorBox error={q.error || "Review not found"} />;
+  const shownScore = displayedReviewScore(r);
+  const outdatedBackend = !!health.data?.analysisVersion && health.data.analysisVersion !== ANALYSIS_VERSION;
   const visible = r.findings.filter(
     (f) => (filter === "all" || f.severity === filter) && f.status === "open",
   );
@@ -496,12 +501,17 @@ export function ReviewWorkspace() {
         <div>
           <h1>{r.name}</h1>
           <p>
-            {r.files.length} files � {r.source} � Revision {r.revision}
+            {r.files.length} files · {r.source} · Revision {r.revision}
           </p>
         </div>
         <Badge tone={r.status === "completed" ? "green" : "violet"}>
           {r.status}
         </Badge>
+        <button disabled={busy || health.isPending || outdatedBackend || ["queued", "running"].includes(r.status)} onClick={async () => {
+          setBusy(true); setError(undefined);
+          try { const fresh = await post<Review>(`/reviews/${r.id}/rerun`, {ai:r.ai}); navigate(`/app/reviews/${fresh.id}`); }
+          catch (cause) { setError(cause); } finally { setBusy(false); }
+        }}><RotateCcw size={15}/>Run review again</button>
         <button className="logs-button" onClick={() => setShowLogs(true)}>
           <Terminal size={15} />
           Review logs
@@ -516,7 +526,9 @@ export function ReviewWorkspace() {
           {r.error || r.logs.at(-1)}
         </div>
       )}
+      {outdatedBackend && <div className="error" role="alert">The backend is running analyzer {health.data?.analysisVersion}. Deploy the updated API ({ANALYSIS_VERSION}) before rerunning this review.</div>}
       <ErrorBox error={error} />
+      {!outdatedBackend && r.status === "completed" && r.analysisVersion !== ANALYSIS_VERSION && <div className="review-coverage" role="status">These stored results use an earlier analyzer. Run review again to analyze the snapshot with the updated checks.</div>}
       <GitHubReviewActions review={r}/>
       <div className="review-workspace">
         <aside className="file-explorer">
@@ -530,7 +542,7 @@ export function ReviewWorkspace() {
               aria-label="Search files"
               value={fileSearch}
               onChange={(e) => setFileSearch(e.target.value)}
-              placeholder="Find a file."
+              placeholder="Find a file…"
             />
           </div>
           <div className="file-list">
@@ -585,7 +597,7 @@ export function ReviewWorkspace() {
             />
           </div>
           <div className="editor-status">
-            <span>{current.content.split("\n").length} lines � UTF-8</span>
+            <span>{current.content.split("\n").length} lines · UTF-8</span>
             {edit !== null ? (
               <button
                 className="primary small-button"
@@ -624,15 +636,16 @@ export function ReviewWorkspace() {
           {tab === "findings" ? (
             <div className="findings-pane">
               <div className="review-coverage" role="status">
+                {r.analysisVersion && <p>Analyzer: {r.analysisVersion}</p>}
                 {r.aiStatus === "stale" ? "Snapshot changed. Findings reflect static reanalysis only. Start a new AI review for an updated assessment; previous chat replies may refer to an older revision." : r.aiStatus === "failed" ? "AI analysis failed. Only static results are available; open Review logs for details." : !r.ai ? "Basic static review only. Enable AI on a new review for broader logic and complexity analysis." : r.aiStatus === "completed" ? "AI assessment available in Assistant. Findings are source-backed hypotheses, not executed tests." : "AI coverage: check Review logs for completion."}
               </div>
               <div className="findings-summary">
                 <div>
-                  <strong>
-                    {r.score ?? "-"}
-                    <small>/100</small>
+                  <strong className={shownScore == null ? "unscored" : undefined}>
+                    {shownScore ?? "Unscored"}
+                    {shownScore != null && <small>/100</small>}
                   </strong>
-                  <span>Finding-based score � not correctness</span>
+                  <span>{shownScore == null ? "Analysis incomplete or not yet scored" : "Finding-based indicator, not correctness"}</span>
                 </div>
                 <select
                   aria-label="Filter severity"
@@ -717,7 +730,7 @@ export function ReviewWorkspace() {
                           </button>
                         </div>
                         <small className="muted">
-                          {f.engine} � Source evidence at line {f.startLine}
+                          {f.engine} · Source evidence at line {f.startLine}
                         </small>
                       </div>
                     )}
@@ -905,7 +918,7 @@ function Chat({ reviewId, assessment }: { reviewId: string; assessment?: string 
         {mutation.isPending && (
           <div className="message">
             <LoaderCircle className="spin" size={15} />
-            Thinking with your source context.
+            Thinking with your source context…
           </div>
         )}
         <ErrorBox error={q.error || mutation.error} />
@@ -922,7 +935,7 @@ function Chat({ reviewId, assessment }: { reviewId: string; assessment?: string 
           value={content}
           maxLength={4000}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Ask about this code."
+          placeholder="Ask about this code…"
         />
         <button
           className="primary icon-button"

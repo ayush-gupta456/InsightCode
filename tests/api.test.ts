@@ -239,7 +239,7 @@ test("account → project → review → finding → patch → revert with acces
       token,
     );
     assert.equal(dismissed.status, 200);
-    assert.equal(dismissed.body.score, 100);
+    assert.equal(dismissed.body.score, undefined);
     const analytics = await request("/analytics", "GET", undefined, token);
     assert.equal(analytics.body.reviews, 1);
     assert.equal(analytics.body.findings, 0);

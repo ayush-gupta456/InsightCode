@@ -11,6 +11,7 @@ import bcrypt from "bcryptjs";
 import { randomUUID } from "node:crypto";
 import { z, ZodError } from "zod";
 import { createPatch } from "diff";
+import { ANALYSIS_VERSION, hasCompleteRequestedAnalysis, displayedReviewScore } from "../shared/review-metadata.js";
 import { Store } from "./store.js";
 import {
   HttpError,
@@ -39,7 +40,8 @@ import { mountTeams } from './teams.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 const now = () => new Date().toISOString();
-export async function createApp(store: Store, secret: string) {
+export async function createApp(store: Store, secret: string, services: { enrich?: typeof enrich } = {}) {
+  const reviewEnricher = services.enrich || enrich;
   const app = express();
   // Trust only explicitly listed proxy addresses/subnets, never arbitrary forwarded IPs.
   const trustedProxies = process.env.TRUSTED_PROXY_CIDRS?.split(',').map(value=>value.trim()).filter(Boolean);
@@ -117,8 +119,8 @@ export async function createApp(store: Store, secret: string) {
     res.json({
       status: "ok",
       persistence: process.env.MONGODB_URI ? "mongodb" : "local",
-      aiConfigured: !!process.env.GEMINI_API_KEY,
-      analysisVersion: "java-traversal-v1",
+      aiConfigured: !!process.env.GEMINI_API_KEY && !!process.env.GEMINI_MODEL,
+      analysisVersion: ANALYSIS_VERSION,
       revision: process.env.RENDER_GIT_COMMIT || "local",
     }),
   );
@@ -333,8 +335,10 @@ export async function createApp(store: Store, secret: string) {
     }
     try {
       review.status = "running";
+      review.analysisVersion = ANALYSIS_VERSION;
+      review.analysisRevision = process.env.RENDER_GIT_COMMIT || "local";
       review.aiStatus = review.ai ? "pending" : "disabled";
-      review.logs.push("Source accepted. Starting deterministic analysis.");
+      review.logs.push(`Source accepted. Starting deterministic analysis (${ANALYSIS_VERSION}).`);
       await saveReview(review);
       review.findings = analyze(review.files);
       const external = await runAnalyzers(review.files,async message=>{review.logs.push(message);await saveReview(review);});
@@ -347,7 +351,7 @@ export async function createApp(store: Store, secret: string) {
         review.logs.push("Retrieving bounded context for Gemini.");
         await saveReview(review);
         try {
-          const result = await enrich(review.files, review.findings);
+          const result = await reviewEnricher(review.files, review.findings);
           review.findings = result.findings;
           review.assessment = result.assessment;
           review.aiStatus = "completed";
@@ -360,8 +364,8 @@ export async function createApp(store: Store, secret: string) {
           );
         }
       }
-      review.score = score(review.findings);
       review.status = "completed";
+      review.score = hasCompleteRequestedAnalysis(review) ? score(review.findings) : undefined;
       review.logs.push(
         "Review complete. Security hotspots require human confirmation.",
       );
@@ -500,6 +504,22 @@ export async function createApp(store: Store, secret: string) {
   app.get("/api/reviews/:id", async (req, res) =>
     res.json(await owned("reviews", String(req.params.id), res.locals.userId)),
   );
+  // Re-run creates a new analysis record from the stored snapshot, retaining the original history.
+  app.post("/api/reviews/:id/rerun", async (req, res) => {
+    const input = z.object({ ai: z.boolean().optional() }).parse(req.body);
+    const previous = await owned("reviews", String(req.params.id), res.locals.userId);
+    if (processing.has(previous.id) || ["queued", "running"].includes(previous.status))
+      throw new HttpError(409, "Wait for the current review to finish");
+    const review = await submit(res.locals.userId, {
+      name: previous.name, files: previous.files.map(file => ({...file})),
+      ai: input.ai ?? previous.ai, projectId: previous.projectId,
+      source: previous.source,
+      // Changed snapshots must not be publishable against the original PR head.
+      github: previous.revision === 0 ? previous.github : undefined,
+    });
+    await audit(res.locals.userId, "review.rerun", review.id);
+    res.status(202).json(review);
+  });
   app.delete("/api/reviews/:id", async (req, res) => {
     const review = await owned("reviews", String(req.params.id), res.locals.userId);
     if (review.ownerId !== res.locals.userId) throw new HttpError(403, "Only the review creator can delete it");
@@ -535,7 +555,7 @@ export async function createApp(store: Store, secret: string) {
     if (review.status !== 'completed') throw new HttpError(409,'Wait for review completion');
     if (!finding) throw new HttpError(404, "Finding not found");
     finding.status = status;
-    review.score = score(review.findings);
+    review.score = hasCompleteRequestedAnalysis(review) ? score(review.findings) : undefined;
     await saveReview(review);
     await audit(res.locals.userId, `finding.${status}`, finding.id);
     res.json(review);
@@ -543,6 +563,7 @@ export async function createApp(store: Store, secret: string) {
   app.get("/api/analytics", async (_req, res) => {
     const reviews = await visibleReviews(res.locals.userId);
     const completed = reviews.filter((r) => r.status === "completed");
+    const scored = completed.filter(r => displayedReviewScore(r) != null);
     const findings = completed
       .flatMap((r) => r.findings)
       .filter((f) => f.status === "open");
@@ -558,14 +579,15 @@ export async function createApp(store: Store, secret: string) {
       critical: findings.filter((f) =>
         ["critical", "high"].includes(f.severity),
       ).length,
-      score: completed.length
+      excludedScores: completed.length - scored.length,
+      score: scored.length
         ? Math.round(
-            completed.reduce((n, r) => n + (r.score || 0), 0) /
-              completed.length,
+            scored.reduce((n, r) => n + r.score!, 0) /
+              scored.length,
           )
         : null,
       languages,
-      trends: completed
+      trends: scored
         .slice(-20)
         .map((r) => ({
           name: new Date(r.createdAt).toLocaleDateString("en-GB", {
@@ -576,7 +598,7 @@ export async function createApp(store: Store, secret: string) {
           findings: r.findings.length,
         })),
       methodology:
-        "Per review: max(0, 100 − 20×critical − 10×high − 4×medium − low), using open findings. Overall is the mean of completed reviews. This is a rule-based indicator, not a security certification. Language counts include each review snapshot.",
+        "Per review: max(0, 100 − 20×critical − 10×high − 4×medium − low), using open findings. Overall is the mean of scored completed reviews; requested AI failures or stale assessments are excluded. This is a rule-based indicator, not a security certification. Language counts include each review snapshot.",
     });
   });
   app.get("/api/notifications", async (_req, res) =>
@@ -725,7 +747,7 @@ export async function createApp(store: Store, secret: string) {
     review.findings = analyze(review.files);
     delete review.assessment;
     review.aiStatus = review.ai ? "stale" : "disabled";
-    review.score = score(review.findings);
+    review.score = hasCompleteRequestedAnalysis(review) ? score(review.findings) : undefined;
     fix.status = action === "apply" ? "applied" : "reverted";
     fix.validation =
       "Deterministic analysis rerun. Source was not executed; tests and external analyzers have not run.";
