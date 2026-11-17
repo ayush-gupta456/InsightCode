@@ -48,6 +48,7 @@ export function normalizeDiagnostics(raw:unknown,files:SourceFile[],engine:strin
 }
 export async function runAnalyzers(files:SourceFile[],log:(message:string)=>Promise<void>) {
   const findings:Finding[]=[];
+  if (!process.env.ANALYZER_IMAGE) await log("External language analyzers unavailable: no isolated worker configured. Built-in rules and JS/TS/JSON parsing only; no compilation or test execution claimed.");
   for(const name of configuredAnalyzers()){
     const relevant=name==='ruff'||name==='bandit'?files.some(f=>f.path.endsWith('.py')):name==='eslint'?files.some(f=>/\.(js|jsx|mjs|cjs)$/.test(f.path)):name==='typescript'?files.some(f=>/\.(ts|tsx)$/.test(f.path)):name==='checkstyle'||name==='spotbugs'?files.some(f=>f.path.endsWith('.java')):true;
     if(!relevant){await log(`${name}: skipped (no supported source files).`);continue;}

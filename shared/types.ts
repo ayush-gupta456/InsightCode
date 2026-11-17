@@ -33,7 +33,8 @@ export type Review = {
   assessment?: string;
   analysisVersion?: string;
   analysisRevision?: string;
-  aiStatus?: "disabled" | "pending" | "completed" | "failed" | "stale";
+  aiStatus?: "disabled" | "pending" | "completed" | "failed" | "stale" | "partial";
+  aiCoverage?: { planned: number; completed: number; omitted: number; failures: string[] };
   revision: number;
   github?: { owner: string; repo: string; pull?: number; ref: string };
 };

@@ -3,12 +3,24 @@ import { HttpError } from "./security.js";
 // Never expose provider response bodies, request headers, or credentials.
 export function aiFailureMessage(error: unknown): string {
   if (error instanceof HttpError) return error.message;
-  const e = error as { statusCode?: number; name?: string; cause?: { statusCode?: number } } | null;
-  const status = e?.statusCode ?? e?.cause?.statusCode;
+  type ProviderError = { statusCode?: number; name?: string; cause?: unknown; lastError?: unknown; errors?: unknown[] };
+  const e = error as ProviderError | null;
+  const queue: unknown[] = [error], seen = new Set<unknown>();
+  let status: number | undefined, timedOut = false;
+  // SDK retry wrappers may keep the actionable status in lastError or errors, not cause.
+  while (queue.length && seen.size < 12) {
+    const item = queue.shift();
+    if (!item || typeof item !== "object" || seen.has(item)) continue;
+    seen.add(item);
+    const nested = item as ProviderError;
+    if (typeof nested.statusCode === "number") { status = nested.statusCode; break; }
+    timedOut ||= nested.name === "TimeoutError" || nested.name === "AbortError";
+    queue.push(nested.cause, nested.lastError, ...(nested.errors || []).slice(0, 3));
+  }
   if (status === 429) return "AI quota or rate limit reached. Check the provider quota and retry later";
   if (status === 401 || status === 403) return "AI credentials or model access were rejected. Check the server's Gemini configuration";
   if (status === 404) return "The configured AI model is unavailable. Check GEMINI_MODEL on the server";
   if (status && status >= 500) return "The AI provider is temporarily unavailable. Retry later";
-  if (e?.name === "TimeoutError" || e?.name === "AbortError") return "AI analysis timed out. Retry with a smaller source set";
+  if (timedOut || e?.name === "TimeoutError" || e?.name === "AbortError") return "AI analysis timed out. Retry with a smaller source set";
   return "AI response could not be validated. Retry the review; static findings remain available";
 }
