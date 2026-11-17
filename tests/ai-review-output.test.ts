@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Finding } from "../shared/types.js";
-import { mergeReviewFindings, parseReviewOutput } from "../server/ai.js";
+import { mergeReviewFindings, parseReviewOutput, recoverReviewOutput } from "../server/ai.js";
 
 test("AI fallback accepts only complete schema-valid JSON", () => {
   const result = { findings: [], assessment: "Source-reviewed assessment" };
@@ -11,6 +11,15 @@ test("AI fallback accepts only complete schema-valid JSON", () => {
   assert.throws(() => parseReviewOutput('{"findings": [], "assessment": ""}'));
   assert.throws(() => parseReviewOutput('{"findings": [{"title": "unsupported claim"}], "assessment": "text"}'));
   assert.throws(() => parseReviewOutput('A generic explanation instead of JSON'));
+});
+
+test("a malformed claim cannot discard other schema-valid claims in a complete response", () => {
+  const valid = {title:"Division by zero",category:"reliability",severity:"high",confidence:.9,file:"a.py",startLine:1,endLine:1,description:"Always raises",impact:"Failure",recommendation:"Validate divisor",evidence:"return 1/0"};
+  const recovered = recoverReviewOutput(JSON.stringify({findings:[valid,{...valid,confidence:"high"}],assessment:"Source review"}));
+  assert.equal(recovered.findings.length,1);
+  assert.equal(recovered.invalidCandidates,1);
+  assert.throws(()=>recoverReviewOutput('{"findings":['));
+  assert.throws(()=>recoverReviewOutput(JSON.stringify({findings:[{title:"invalid"}],assessment:"text"})));
 });
 
 

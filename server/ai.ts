@@ -44,6 +44,15 @@ export function parseReviewOutput(text: string) {
   const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   return reviewOutput.parse(JSON.parse(clean));
 }
+/** Keep individually valid claims from a complete envelope; invalid claims never become findings. */
+export function recoverReviewOutput(text: string) {
+  const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const envelope = z.object({findings:z.array(z.unknown()).max(200),assessment:z.string().min(1).max(18000)}).parse(JSON.parse(clean));
+  const candidates = envelope.findings.map(value => aiFinding.safeParse(value));
+  const findings = candidates.flatMap(result => result.success ? [result.data] : []).slice(0,40);
+  if (envelope.findings.length && !findings.length) throw new HttpError(502,"AI returned no schema-valid findings; static results retained");
+  return {findings,assessment:envelope.assessment,invalidCandidates:envelope.findings.length-findings.length};
+}
 export function validateEvidence(
   files: SourceFile[],
   finding: z.infer<typeof aiFinding>,
@@ -74,7 +83,7 @@ export function mergeReviewFindings(existing: Finding[], additional: Finding[]) 
   return all;
 }
 
-async function reviewBatch(context: ReviewChunk[], deterministic: Finding[]) {
+async function reviewBatch(context: ReviewChunk[], deterministic: Finding[]): Promise<z.infer<typeof reviewOutput> & {invalidCandidates?:number}> {
   const relevant = deterministic.filter(f => context.some(c => c.path === f.file && c.startLine <= f.endLine && f.startLine <= c.endLine));
   const prompt = `Audit every source chunk in this batch for behavioral, syntax, runtime, security and performance defects in its own language. Trace concrete inputs, branching, loops, bounds, nullability, resource lifetime, concurrency, numeric operations and error handling. Distinguish language syntax errors from missing project dependencies. Return actionable findings with literal evidence and a Markdown assessment containing coverage limitations, a per-method complexity table, edge-case tests and correction guidance. Do not put actionable bugs only in the assessment: include each supported defect in findings. Do not invent bugs to fill a quota. Source chunks use absolute one-based startLine/endLine offsets; line numbers are not relative to the chunk. Analyze only provided source and identify dependencies on omitted code. Existing findings (discuss in assessment, do not duplicate): ${JSON.stringify(relevant.map((f) => ({ title: f.title, file: f.file, startLine: f.startLine })))}\nUNTRUSTED_SOURCE_JSON:\n${JSON.stringify(context)}`;
   const abortSignal = AbortSignal.timeout(60_000);
@@ -94,7 +103,10 @@ async function reviewBatch(context: ReviewChunk[], deterministic: Finding[]) {
     if (response.finishReason === "length") throw new HttpError(502, "AI review response was truncated; coverage is incomplete");
     output = response.output;
   } catch (error) {
-    const e = error as {statusCode?: number; name?: string};
+    const e = error as {statusCode?: number; name?: string; text?: string};
+    if (e.name === "AI_NoObjectGeneratedError" && e.text) {
+      try { return recoverReviewOutput(e.text); } catch { /* Retry a malformed complete response below. */ }
+    }
     // Retry only a rejected schema or malformed structured response, not quota/auth failures.
     if (e.statusCode !== 400 && e.name !== "AI_NoObjectGeneratedError") throw error;
     const fallback = await generateText({
@@ -103,7 +115,7 @@ async function reviewBatch(context: ReviewChunk[], deterministic: Finding[]) {
       maxOutputTokens: 10000, maxRetries: 0, abortSignal,
     });
     if (fallback.finishReason === "length") throw new HttpError(502, "AI review exceeded the response limit. Review fewer files at a time");
-    output = parseReviewOutput(fallback.text);
+    return recoverReviewOutput(fallback.text);
   }
   return output;
 }
@@ -131,7 +143,8 @@ export async function enrich(files: SourceFile[], deterministic: Finding[], runB
   for (let i = 0; i < Math.min(batches.length, limit); i += 2) {
     const results = await Promise.allSettled(batches.slice(i, Math.min(i + 2, limit)).map(async context => {
       if (JSON.stringify(context).length > 50000) throw new HttpError(413, "Source line exceeds the review context budget; split minified or generated code");
-      return reviewOutput.parse(await runBatch(context, deterministic));
+      const result = await runBatch(context, deterministic);
+      return {...reviewOutput.parse(result),invalidCandidates:result.invalidCandidates || 0};
     }));
     for (const [offset, result] of results.entries()) {
       if (result.status === "rejected") { coverage.failures.push(`Batch ${i + offset + 1}: ${aiFailureMessage(result.reason)}`); continue; }
@@ -148,7 +161,7 @@ export async function enrich(files: SourceFile[], deterministic: Finding[], runB
       verification: "hotspot" as const,
       status: "open" as const,
     }));
-      rejected += output.findings.length - valid.length;
+      rejected += output.findings.length - valid.length + result.value.invalidCandidates;
       findings = mergeReviewFindings(findings, valid);
     }
   }
