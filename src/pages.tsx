@@ -77,28 +77,28 @@ export function Dashboard() {
           [
             ScanLine,
             "Total reviews",
-            a?.reviews ?? "—",
+            a?.reviews ?? "-",
             "Across your workspace",
             "violet",
           ],
           [
             FileCode2,
             "Open findings",
-            a?.findings ?? "—",
+            a?.findings ?? "-",
             "From completed reviews",
             "amber",
           ],
           [
             ShieldCheck,
             "Security hotspots",
-            a?.security ?? "—",
+            a?.security ?? "-",
             "Awaiting human assessment",
             "red",
           ],
           [
             Activity,
             "Finding-based score",
-            a?.score == null ? "—" : `${a.score}/100`,
+            a?.score == null ? "-" : `${a.score}/100`,
             "Not a measure of correctness",
             "green",
           ],
@@ -322,7 +322,7 @@ export function ReviewTable({
       <ErrorBox error={remove.error} />
       <div className="review-dialog-actions">
         <button disabled={remove.isPending} onClick={() => setDeleting(null)}>Cancel</button>
-        <button className="danger" disabled={remove.isPending} onClick={() => deleting && remove.mutate(deleting.id)}>{remove.isPending ? "Deleting…" : "Delete review"}</button>
+        <button className="danger" disabled={remove.isPending} onClick={() => deleting && remove.mutate(deleting.id)}>{remove.isPending ? "Deleting." : "Delete review"}</button>
       </div>
     </Modal><div className="table-scroll">
       <table>
@@ -347,7 +347,7 @@ export function ReviewTable({
                   <span>
                     <strong>{r.name}</strong>
                     <small>
-                      {r.fileCount} {r.fileCount === 1 ? "file" : "files"} · {r.source}
+                      {r.fileCount} {r.fileCount === 1 ? "file" : "files"} � {r.source}
                     </small>
                   </span>
                 </Link>
@@ -412,7 +412,7 @@ export function ReviewList() {
             <Search size={16} />
             <input
               aria-label="Search reviews"
-              placeholder="Search your reviews…"
+              placeholder="Search your reviews."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -544,7 +544,7 @@ export function Projects() {
               placeholder="What are you building?"
             />
           </label>
-          <label>Visibility<select name="teamId"><option value="">Private — only me</option>{teams.data?.map(t=><option key={t.id} value={t.id}>{t.name} — team members</option>)}</select></label><ErrorBox error={create.error} />
+          <label>Visibility<select name="teamId"><option value="">Private - only me</option>{teams.data?.map(t=><option key={t.id} value={t.id}>{t.name} - team members</option>)}</select></label><ErrorBox error={create.error} />
           <button className="primary" disabled={create.isPending}>
             Create project
           </button>
@@ -590,7 +590,7 @@ export function Findings({ security = false }: { security?: boolean }) {
               aria-label="Search findings"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search findings or files…"
+              placeholder="Search findings or files."
             />
           </div>
           <select aria-label="Finding category" value={category} onChange={e=>setParams(previous=>{const next=new URLSearchParams(previous);if(e.target.value==='all')next.delete('category');else next.set('category',e.target.value);return next;})}>
@@ -650,7 +650,7 @@ export function Findings({ security = false }: { security?: boolean }) {
                   <code>
                     {f.file}:{f.startLine}
                   </code>{" "}
-                  · {f.reviewName}
+                  � {f.reviewName}
                 </p>
               </div>
               <ArrowUpRight size={16} />
@@ -684,7 +684,7 @@ export function Analytics() {
                 ["Completed + pending", a.reviews],
                 ["Open findings", a.findings],
                 ["High / critical", a.critical],
-                ["Average score", a.score ?? "—"],
+                ["Average score", a.score ?? "-"],
               ].map(([name, value]) => (
                 <div className="stat-card" key={name}>
                   <span>{name}</span>
@@ -830,7 +830,7 @@ export function SettingsPage() {
               </div>
               <div className="setting-row">
                 <span>Analysis engines</span>
-                <Badge>{q.data.analyzers.join(" · ")}</Badge>
+                <Badge>{q.data.analyzers.join(" � ")}</Badge>
               </div>
             </>
           )}
@@ -936,7 +936,7 @@ export function GitHubPage() {
           </div>
           <ErrorBox error={error} />
           <button className="primary" disabled={busy}>
-            {busy ? "Fetching…" : "Find pull requests"}
+            {busy ? "Fetching." : "Find pull requests"}
             <ArrowRight size={16} />
           </button>
         </form>
@@ -954,7 +954,7 @@ export function GitHubPage() {
                 <div>
                   <strong>{p.title}</strong>
                   <p className="muted">
-                    #{p.number} · {p.user.login} · {p.head.ref}
+                    #{p.number} � {p.user.login} � {p.head.ref}
                   </p>
                 </div>
                 <button
@@ -1028,7 +1028,7 @@ export function AdminPage() {
       {q.data && (
         <section className="panel">
           <h2>
-            {q.data.users.length} accounts · {q.data.reviews} reviews
+            {q.data.users.length} accounts � {q.data.reviews} reviews
           </h2>
           {q.data.users.map((u: any) => (
             <div className="setting-row" key={u.id}>
