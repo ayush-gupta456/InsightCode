@@ -279,6 +279,7 @@ export async function createApp(store: Store, secret: string, services: { enrich
   app.get("/api/capabilities", (_req, res) =>
     res.json({
       gemini: !!process.env.GEMINI_API_KEY && !!process.env.GEMINI_MODEL,
+      aiModel: /^(?:models\/)?gemini[a-z0-9._-]{1,100}$/i.test(process.env.GEMINI_MODEL || "") ? process.env.GEMINI_MODEL : "configured model name unavailable",
       github: process.env.GITHUB_CLIENT_ID ? 'oauth' : 'public-read',
       persistence: process.env.MONGODB_URI
         ? "MongoDB"

@@ -24,7 +24,7 @@ test("schema fallback retains JSON mode and reads parsed provider output instead
       const format = await options.output.responseFormat;
       assert.ok(format);
       assert.equal(format.type, "json");
-      assert.equal(options.reasoning, calls === 1 ? "medium" : "low");
+      assert.equal(options.reasoning, undefined, "Preserve the configured model's reasoning defaults");
       if(calls===1) throw Object.assign(new Error("Malformed native output"),{name:"AI_NoObjectGeneratedError",text:"{incomplete"});
       return {finishReason:"stop",text:"not the structured response",output:{findings:[],assessment:"Reviewed source"}};
     });
