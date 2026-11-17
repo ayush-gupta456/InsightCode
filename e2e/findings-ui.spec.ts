@@ -4,7 +4,8 @@ import {analyze} from "../server/analysis";
 import {ANALYSIS_VERSION} from "../shared/review-metadata";
 const content=await fs.readFile(new URL("../tests/fixtures/BuggyDijkstraOriginal.java",import.meta.url),"utf8");
 
-test("findings UI renders actual analyzer output and hides legacy perfect scores after AI failure",async({page})=>{
+for (const width of [1440,390]) test(`findings UI renders analyzer output and hides failed AI scores at ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:1000});
   const findings=analyze([{path:"BuggyDijkstra.java",content}]);
   expect(findings).toHaveLength(4);
   let oldBackend=false;
@@ -36,6 +37,6 @@ test("findings UI renders actual analyzer output and hides legacy perfect scores
   await page.getByRole("button",{name:"Run review again",exact:true}).click();
   await expect(page).toHaveURL(/qa-rerun/);expect(reruns).toBe(1);
   oldBackend=true;await page.reload();
-  await expect(page.getByRole("alert")).toContainText("Deploy the updated API");
+  await expect(page.getByRole("alert").filter({hasText:"Deploy the updated API"})).toBeVisible();
   await expect(page.getByRole("button",{name:"Run review again",exact:true})).toBeDisabled();
 });

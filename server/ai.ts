@@ -97,8 +97,7 @@ export async function reviewBatch(context: ReviewChunk[], deterministic: Finding
     output: Output.object({
       schema: reviewOutput,
     }),
-    reasoning: "medium",
-    maxOutputTokens: 16000,
+    maxOutputTokens: 10000,
     maxRetries: 1,
     abortSignal,
   });
@@ -116,8 +115,7 @@ export async function reviewBatch(context: ReviewChunk[], deterministic: Finding
       prompt: `${prompt}\nReturn concise JSON matching this schema: ${JSON.stringify(z.toJSONSchema(reviewOutput))}. Keep assessment under 6000 characters. No commentary outside JSON.`,
       // Keep provider JSON grammar enforcement even when its strict schema is rejected.
       output: Output.json(),
-      reasoning: "low",
-      maxOutputTokens: 16000, maxRetries: 0, abortSignal,
+      maxOutputTokens: 10000, maxRetries: 0, abortSignal,
     });
     if (fallback.finishReason === "length") throw new HttpError(502, "AI review exceeded the response limit. Review fewer files at a time");
     if (fallback.output === undefined) throw new HttpError(502, "AI returned no JSON review output; static findings retained");
