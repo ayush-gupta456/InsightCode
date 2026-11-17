@@ -22,18 +22,13 @@ import {
   Sparkles,
   Search,
   FileCode2,
-  Check,
   Activity,
-  Clock3,
-  SlidersHorizontal,
-  GitBranch,
   LockKeyhole,
-  ExternalLink,
   Trash2,
 } from "lucide-react";
 import { api, post, useSession } from "./api";
 import { Badge, Empty, ErrorBox, Loading, Modal, PageTitle, date } from "./ui";
-import type { Review, Project, Finding } from "../shared/types";
+import type { Review, Project } from "../shared/types";
 import { AnimatedIcon } from "./motion-ui";
 import { GitHubConnection } from './integrations';
 import TeamManagement from './team';

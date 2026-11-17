@@ -159,7 +159,6 @@ test("account → project → review → finding → patch → revert with acces
       ).status,
       404,
     );
-    const finding = review!.body.findings[0];
     const patch = await request(
       `/reviews/${reviewId}/fixes`,
       "POST",

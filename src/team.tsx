@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation,useQuery,useQueryClient } from '@tanstack/react-query';
-import { Plus,Users,Copy } from 'lucide-react';
+import { Plus,Copy } from 'lucide-react';
 import { api,post,useSession } from './api';
 import { Badge,Empty,ErrorBox,Modal,PageTitle } from './ui';
 export default function TeamManagement(){

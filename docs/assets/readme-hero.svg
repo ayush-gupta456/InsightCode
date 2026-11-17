@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="title description">
+  <title id="title">InsightCode — clarity for your next commit</title>
+  <desc id="description">A code review workflow connects source, evidence, and an approved change. Its connector draws once when supported; all information is visible without animation.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#171325"/><stop offset="1" stop-color="#0c0d12"/></linearGradient>
+    <linearGradient id="accent"><stop stop-color="#b9a5ff"/><stop offset="1" stop-color="#7ed9bd"/></linearGradient>
+  </defs>
+  <style>
+    .trace {stroke-dasharray:500;stroke-dashoffset:0;animation:draw 2.4s ease-out 1}
+    .signal {animation:arrive 1s ease-out 1}
+    @keyframes draw {from {stroke-dashoffset:500} to {stroke-dashoffset:0}}
+    @keyframes arrive {from {opacity:.3} to {opacity:1}}
+    @media(prefers-reduced-motion:reduce){.trace,.signal{animation:none}}
+  </style>
+  <rect width="1200" height="400" rx="24" fill="url(#bg)"/>
+  <rect x="1" y="1" width="1198" height="398" rx="23" fill="none" stroke="#393044"/>
+  <g fill="none" stroke="#b9a5ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="60" y="50" width="46" height="46" rx="13" fill="#7653cb" stroke="none"/><path stroke="white" d="m76 65-8 8 8 8m14-16 8 8-8 8m-5-20-5 24"/></g>
+  <g font-family="Inter,Segoe UI,Arial,sans-serif"><text x="122" y="82" fill="#f2f0f9" font-size="27" font-weight="600">InsightCode</text><text x="62" y="163" fill="#f2f0f9" font-size="48" font-weight="600" letter-spacing="-2">Clarity for your next commit.</text><text x="64" y="204" fill="#aaa7be" font-size="19">Explore the source. Follow the evidence. Approve the change.</text></g>
+  <path class="trace" d="M315 300H480M720 300H885" fill="none" stroke="url(#accent)" stroke-width="2"/>
+  <g font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" text-anchor="middle" class="signal">
+    <rect x="64" y="267" width="251" height="66" rx="12" fill="#171922" stroke="#363342"/><text x="189" y="306" fill="#c7bbef">01 / Source</text>
+    <rect x="480" y="267" width="240" height="66" rx="12" fill="#292039" stroke="#8062bb"/><text x="600" y="306" fill="#e1d6ff">02 / Evidence</text>
+    <rect x="885" y="267" width="251" height="66" rx="12" fill="#13251f" stroke="#315f4e"/><text x="1010" y="306" fill="#9de3c9">03 / Your decision</text>
+  </g>
+  <text x="64" y="370" font-family="Segoe UI,Arial,sans-serif" fill="#9a95ad" font-size="12" letter-spacing="2">REPOSITORY INTELLIGENCE / HUMAN JUDGMENT</text>
+</svg>

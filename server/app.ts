@@ -787,7 +787,7 @@ export async function createApp(store: Store, secret: string) {
     );
   });
   app.post('/api/reviews/:id/github/publish', async(req,res)=>{
-    const {approved,body,findingId}=z.object({approved:z.literal(true),body:z.string().trim().min(1).max(20_000),findingId:z.string().optional()}).parse(req.body);
+    const {body,findingId}=z.object({approved:z.literal(true),body:z.string().trim().min(1).max(20_000),findingId:z.string().optional()}).parse(req.body);
     const review=await owned('reviews',String(req.params.id),res.locals.userId);
     if(!review.github?.pull)throw new HttpError(400,'This review is not associated with a pull request');
     const token=await githubToken(store,res.locals.userId);if(!token)throw new HttpError(409,'Connect GitHub to publish');
