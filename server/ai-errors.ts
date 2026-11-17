@@ -22,5 +22,9 @@ export function aiFailureMessage(error: unknown): string {
   if (status === 404) return "The configured AI model is unavailable. Check GEMINI_MODEL on the server";
   if (status && status >= 500) return "The AI provider is temporarily unavailable. Retry later";
   if (timedOut || e?.name === "TimeoutError" || e?.name === "AbortError") return "AI analysis timed out. Retry with a smaller source set";
+  if (e?.name === "AI_NoObjectGeneratedError") return "AI returned invalid structured review data; retry with a smaller source group";
+  if (e?.name === "AI_NoOutputGeneratedError") return "AI returned no review output; check model response limits and retry";
+  if (e?.name === "ZodError" || e?.name === "AI_TypeValidationError") return "AI review fields did not match the required schema; retry with a smaller source group";
+  if (e?.name === "SyntaxError" || e?.name === "AI_JSONParseError") return "AI returned malformed JSON review data; retry with a smaller source group";
   return "AI response could not be validated. Retry the review; static findings remain available";
 }
