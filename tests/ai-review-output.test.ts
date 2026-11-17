@@ -21,6 +21,10 @@ test("schema fallback retains JSON mode and reads parsed provider output instead
     const result=await reviewBatch([{path:"a.py",startLine:1,endLine:1,text:"print(1)"}],[],async options=>{
       calls++;
       assert.ok(options.output,"JSON output must remain enabled on both attempts");
+      const format = await options.output.responseFormat;
+      assert.ok(format);
+      assert.equal(format.type, "json");
+      assert.equal(options.reasoning, calls === 1 ? "medium" : "low");
       if(calls===1) throw Object.assign(new Error("Malformed native output"),{name:"AI_NoObjectGeneratedError",text:"{incomplete"});
       return {finishReason:"stop",text:"not the structured response",output:{findings:[],assessment:"Reviewed source"}};
     });
