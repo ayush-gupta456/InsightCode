@@ -104,20 +104,26 @@ export async function reviewBatch(context: ReviewChunk[], deterministic: Finding
     if (response.finishReason === "length") throw new HttpError(502, "AI review response was truncated; coverage is incomplete");
     output = reviewOutput.parse(response.output);
   } catch (error) {
-    const e = error as {statusCode?: number; name?: string; text?: string};
-    if (e.name === "AI_NoObjectGeneratedError" && e.text) {
+    const e = error as {statusCode?: number; name?: string; text?: string; finishReason?:string};
+    if (e.name === "AI_NoObjectGeneratedError" && e.text && e.finishReason !== "length") {
       try { return recoverReviewOutput(e.text); } catch { /* Retry a malformed complete response below. */ }
     }
     // One JSON-mode recovery for schema or transient provider failures; never auth/quota.
     const transient = e.statusCode !== undefined && e.statusCode >= 500 && e.statusCode <= 599;
     if (!transient && e.statusCode !== 400 && !["AI_NoObjectGeneratedError", "AI_NoOutputGeneratedError", "ZodError"].includes(e.name || "")) throw error;
-    const fallback = await request({
+    let fallback: Awaited<ReturnType<ReviewRequest>>;
+    try { fallback = await request({
       model: model(), system: `${system} ${correctnessChecklist}`,
       prompt: `${prompt}\nReturn concise JSON matching this schema: ${JSON.stringify(z.toJSONSchema(reviewOutput))}. Keep assessment under 6000 characters. No commentary outside JSON.`,
       // Keep provider JSON grammar enforcement even when its strict schema is rejected.
       output: Output.json(),
       maxOutputTokens: 10000, maxRetries: 0, abortSignal,
-    });
+    }); } catch (fallbackError) {
+      const failed = fallbackError as {name?:string; text?:string; finishReason?:string};
+      if (failed.name === "AI_NoObjectGeneratedError" && failed.text && failed.finishReason !== "length")
+        return recoverReviewOutput(failed.text);
+      throw fallbackError;
+    }
     if (fallback.finishReason === "length") throw new HttpError(502, "AI review exceeded the response limit. Review fewer files at a time");
     if (fallback.output === undefined) throw new HttpError(502, "AI returned no JSON review output; static findings retained");
     return recoverReviewOutput(JSON.stringify(fallback.output));
